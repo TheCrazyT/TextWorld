@@ -1,3 +1,7 @@
+backup
+*.exe
+glk.o
+tw_games
 .idea/*
 *.pyc
 *.so

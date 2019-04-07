@@ -12,7 +12,10 @@ from pkg_resources import Requirement, resource_filename
 
 from typing import Optional, List, Tuple
 
-from signal import signal, SIGPIPE, SIG_DFL
+if sys.platform == 'win32':
+  from signal import signal, SIG_DFL
+else:
+  from signal import signal, SIGPIPE, SIG_DFL
 from subprocess import PIPE, Popen
 
 from threading import Thread

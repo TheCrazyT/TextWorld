@@ -8,35 +8,68 @@ echo "Running setup.sh...";
 
 unameOut="$(uname -s)"
 case "${unameOut}" in
-    Linux*)     machine=Linux;;
-    Darwin*)    machine=Mac;;
-    CYGWIN*)    machine=Cygwin;;
-    MINGW*)     machine=MinGW;;
-    *)          machine="UNKNOWN:${unameOut}"
+    Linux*)
+		machine=Linux
+		platform=Linux
+		;;
+    Darwin*)
+		machine=Mac
+		platform=Mac
+		;;
+    CYGWIN*)
+		machine=Cygwin
+		platform=Win
+		;;
+    MINGW*)
+		machine=MinGW
+		platform=Win
+		;;
+	MSYS*)
+		machine=MinGW
+		platform=Win
+		;;
+    *)
+		machine="UNKNOWN:${unameOut}"
 esac
 
 cd textworld/thirdparty/
-
-# Install command line Inform 7
-if [ ! -e I7_6M62_Linux_all.tar.gz ]; then
-    echo "Downloading Inform7 CLI"
-    curl -LO http://inform7.com/download/content/6M62/I7_6M62_Linux_all.tar.gz
-    if [ "${machine}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
-        echo "Downloading Inform7 for Mac"
-        curl -LO http://inform7.com/download/content/6M62/I7-6M62-OSX.dmg
-    fi
+echo "platform: ${platform}"
+if [ "${platform}" == "Linux" ]
+then
+	# Install command line Inform 7
+	if [ ! -e I7_6M62_Linux_all.tar.gz ]; then
+		echo "Downloading Inform7 CLI"
+		curl -LO http://inform7.com/download/content/6M62/I7_6M62_Linux_all.tar.gz
+	fi
+	if [ ! -d inform7-6M62 ]; then
+		tar xf I7_6M62_Linux_all.tar.gz
+	fi
+	(
+		echo "Installing Inform7 CLI"
+		cd inform7-6M62/
+		./install-inform7.sh --prefix $PWD
+		cd ..
+		rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
+		cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
+	)
 fi
-if [ ! -d inform7-6M62 ]; then
-    tar xf I7_6M62_Linux_all.tar.gz
+if [ "${platform}" == "Win" ]; then
+	if [ ! -e I7_6M62_Windows.exe ]; then
+		curl -LO http://inform7.com/download/content/6M62/I7_6M62_Windows.exe
+	fi
+	echo "Installing Inform7 CLI"
+	echo manually install: textworld/thirdparty/I7_6M62_Windows.exe and press enter
+	7z x -y -o/d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
+	read
+	pacman -S mingw-w64-x86_64-python3-cffi ncurses-devel
+	python3.6.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+	mkdir -p /d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7
+	cp /c/Program\ Files\ \(x86\)/Inform\ 7/* /d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/
 fi
-(
-    echo "Installing Inform7 CLI"
-    cd inform7-6M62/
-    ./install-inform7.sh --prefix $PWD
-    cd ..
-    rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-    cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-)
+if [ "${platform}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
+	echo "Downloading Inform7 for Mac"
+	curl -LO http://inform7.com/download/content/6M62/I7-6M62-OSX.dmg
+fi
 
 # Mount DMG if we're using a Mac
 if [ "${machine}" == 'Mac' ] && [ -e inform7-6M62 ]; then

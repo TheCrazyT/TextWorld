@@ -8,7 +8,13 @@ from cffi import FFI
 ffibuilder = FFI()
 
 with open('src/glk_comm.c') as f:
-    ffibuilder.set_source("glk", f.read())
+    ffibuilder.set_source("glk", f.read()
+    ,
+    extra_compile_args=["-fpermissive"],
+    include_dirs=[
+        "/usr/include/python3.6m"
+    ]
+    )
 
     ffibuilder.cdef(r"""
         struct sock_names {

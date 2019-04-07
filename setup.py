@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3.6.exe
 # -*- coding: utf-8 -*-
 
 # Copyright (c) Microsoft Corporation. All rights reserved.
@@ -15,7 +15,8 @@ from setuptools.command.build_py import build_py
 
 def _pre_install(dir):
     from subprocess import check_call
-    check_call(['./setup.sh'], shell=True, cwd=os.getcwd())
+    #check_call(['d:\msys64\msys2.exe','setup.sh'], shell=True, cwd=os.getcwd())
+    pass
 
 
 class CustomInstall(install):

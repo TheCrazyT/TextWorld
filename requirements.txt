@@ -1,7 +1,7 @@
 # Main dependencies
 numpy>=1.13.1
 tqdm>=4.17.1
-cffi>=1.0.0
+cffi>=1.12.2
 networkx>=2
 pyyaml>=3.12
 urwid>=2.0.1
