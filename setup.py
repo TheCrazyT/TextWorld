@@ -1,4 +1,4 @@
-#!/usr/bin/python3.6.exe
+#!/usr/bin/python3.exe
 # -*- coding: utf-8 -*-
 
 # Copyright (c) Microsoft Corporation. All rights reserved.

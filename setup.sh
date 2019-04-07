@@ -58,13 +58,12 @@ if [ "${platform}" == "Win" ]; then
 		curl -LO http://inform7.com/download/content/6M62/I7_6M62_Windows.exe
 	fi
 	echo "Installing Inform7 CLI"
-	echo manually install: textworld/thirdparty/I7_6M62_Windows.exe and press enter
-	7z x -y -o/d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
-	read
-	pacman -S mingw-w64-x86_64-python3-cffi ncurses-devel
-	python3.6.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
-	mkdir -p /d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7
-	cp /c/Program\ Files\ \(x86\)/Inform\ 7/* /d/msys64/usr/lib/python3.6/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/
+	PYTHON_VERSION=$(pkg-config --modversion python3)
+	7z x -y -o/d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
+	pacman -S ncurses-devel
+	/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+	mkdir -p /d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7
+	cp /c/Program\ Files\ \(x86\)/Inform\ 7/* /d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/
 fi
 if [ "${platform}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
 	echo "Downloading Inform7 for Mac"
