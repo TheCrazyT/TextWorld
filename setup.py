@@ -65,6 +65,6 @@ setup(
     install_requires=open('requirements.txt').readlines(),
     test_suite='nose.collector',
     tests_require=[
-        'nose==1.3.7',
+        'nose>=1.3.7',
     ],
 )
