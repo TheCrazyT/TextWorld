@@ -12,7 +12,8 @@ with open('src/glk_comm.c') as f:
     ,
     extra_compile_args=["-fpermissive"],
     include_dirs=[
-        "/usr/include/python3.6m"
+        "/usr/include/python3.6m",
+        "/usr/include/python3.7"
     ]
     )
 
