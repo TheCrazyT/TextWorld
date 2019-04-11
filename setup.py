@@ -15,7 +15,7 @@ from setuptools.command.build_py import build_py
 
 def _pre_install(dir):
     from subprocess import check_call
-    #check_call(['d:\msys64\msys2.exe','setup.sh'], shell=True, cwd=os.getcwd())
+    check_call(['c:\msys64\bin\bash.exe','setup.sh'], shell=True, cwd=os.getcwd())
     pass
 
 

@@ -60,7 +60,7 @@ if [ "${platform}" == "Win" ]; then
 	echo "Installing Inform7 CLI"
 	PYTHON_VERSION=$(pkg-config --modversion python3)
 	7z x -y -o/d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
-	pacman -S ncurses-devel
+	pacman --noconfirm -S ncurses-devel
 	/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 	mkdir -p /d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7
 	cp /c/Program\ Files\ \(x86\)/Inform\ 7/* /d/msys64/usr/lib/python$(PYTHON_VERSION)/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/
