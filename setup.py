@@ -15,7 +15,8 @@ from setuptools.command.build_py import build_py
 
 def _pre_install(dir):
     from subprocess import check_call
-    check_call(['bash.exe','setup.sh'], shell=True, cwd=os.getcwd())
+    #appveyor gets stuck here
+    #check_call(['bash.exe','setup.sh'], shell=True, cwd=os.getcwd())
     pass
 
 
