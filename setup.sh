@@ -63,9 +63,8 @@ if [ "${platform}" == "Win" ]; then
 		curl -LO http://inform7.com/download/content/6M62/I7_6M62_Windows.exe
 	fi
 	echo "Installing Inform7 CLI"
-	PYTHON_VERSION=$(pkg-config --modversion python3)
-	mkdir -p ${MSYS}/usr/lib/python${PYTHON_VERSION}/site-packages/textworld/thirdparty/inform7-6M62/share/inform7
-	7z x -y -o${MSYS}/usr/lib/python${PYTHON_VERSION}/site-packages/textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
+	mkdir -p ./textworld/thirdparty/inform7-6M62/share/inform7
+	7z x -y -o./textworld/thirdparty/inform7-6M62/share/inform7/ I7_6M62_Windows.exe
 	pacman --noconfirm -S ncurses-devel
 	/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 fi
