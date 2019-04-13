@@ -1,5 +1,6 @@
 backup
 *.exe
+*.whl
 glk.o
 tw_games
 .idea/*
