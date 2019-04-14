@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT license.
 
-
+import os
+import platform
 import io
 import json
 import tempfile
@@ -15,7 +16,7 @@ from textworld.logic import Proposition, Action
 from textworld.envs.glulx.git_glulx_ml import GlulxGameState
 from textworld.logic import State
 from textworld.generator import World, Game
-from textworld.utils import maybe_mkdir, get_webdriver
+from textworld.utils import maybe_mkdir, get_webdriver, msys_path, is_msys
 
 from textworld.generator.game import EntityInfo
 from textworld.generator.data import KnowledgeBase
@@ -320,6 +321,9 @@ def take_screenshot(url: str, id: str='world'):
 
     driver = get_webdriver()
 
+    if is_msys():
+        url = url.replace("file://","file://%s" % msys_path())
+
     driver.get(url)
     svg = driver.find_element_by_id(id)
     location = svg.location
@@ -387,6 +391,8 @@ def visualize(world: Union[Game, State, GlulxGameState, World],
     fh, filename = tempfile.mkstemp(suffix=".html", dir=tmpdir, text=True)
     url = 'file://' + filename
     with open(filename, 'w') as f:
+        if is_msys():
+            html = html.replace("/usr/lib","file://%s/usr/lib" % msys_path())
         f.write(html)
 
     img_graph = take_screenshot(url, id="world")

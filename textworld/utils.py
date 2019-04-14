@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 
+import platform
 import os
 import re
 import time
@@ -59,6 +60,14 @@ def which(program):
                 return exe_file
 
     return None
+
+    
+def is_msys():
+    return platform.system().startswith('MSYS')
+    
+def msys_path():
+    msys_bin = os.environ['WD']
+    return msys_bin.replace("\\usr\\bin\\","").replace("\\","/")
 
 def get_webdriver(path=None):
     """

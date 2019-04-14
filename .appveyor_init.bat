@@ -13,7 +13,7 @@ Set PATHBCK=%PATH%
 REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep mingw\)'
 %PACMAN% -Syuu
 %PACMAN% -Syuu
-%PACMAN% -S rebase tree wget python3 python3-setuptools msys/gcc p7zip ncurses-devel python libffi-devel libffi make msys2-runtime python3-pip automake gcc-libs libcrypt libcrypt-devel zlib zlib-devel gcc-fortran
+%PACMAN% -S rebase tree wget python3 python3-setuptools msys/gcc p7zip ncurses-devel python libffi-devel libffi make msys2-runtime python3-pip automake gcc-libs libcrypt libcrypt-devel zlib zlib-devel gcc-fortran mingw-w64-x86_64-graphviz
 %BASH% python3.exe -m pip install --upgrade pip'
 %BASH% python3.exe -m pip install --upgrade --force-reinstall numpy'
 %BASH% python3.exe -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
