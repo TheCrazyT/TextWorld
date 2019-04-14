@@ -65,6 +65,8 @@ if [ "${platform}" == "Win" ]; then
 	echo "Installing Inform7 CLI"
 	mkdir -p ./inform7-6M62/share/inform7
 	7z x -y -o./inform7-6M62/share/inform7/ I7_6M62_Windows.exe
+	rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
+	cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
 	pacman --noconfirm -S ncurses-devel
 	/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 fi
