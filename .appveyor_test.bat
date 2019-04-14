@@ -4,7 +4,9 @@ IF "%MSYS%"=="" (
 )
 echo executing test
 set BASH=%MSYS%\usr\bin\bash -c 'PATH=/usr/bin 
+set PACMAN=%MSYS%\usr\bin\pacman.exe --noconfirm
 
+%PACMAN% -S mingw-w64-x86_64-graphviz
 %BASH% rebaseall -p'
 %BASH% wget -O /tmp/chromedriver_win32.zip https://chromedriver.storage.googleapis.com/73.0.3683.68/chromedriver_win32.zip'
 %BASH% 7z x -y -o/tmp/ chromedriver_win32.zip'
