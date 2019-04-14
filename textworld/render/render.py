@@ -322,7 +322,10 @@ def take_screenshot(url: str, id: str='world'):
     driver = get_webdriver()
 
     if is_msys():
-        url = url.replace("file://","file://%s" % msys_path())
+        if(os.environ["TEMP"]=="/tmp"):
+            url = url.replace("file://","file://%s" % msys_path())
+        else:
+            url = url.replace("/c/","c:/")
 
     driver.get(url)
     svg = driver.find_element_by_id(id)
