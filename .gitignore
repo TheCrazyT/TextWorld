@@ -1,6 +1,7 @@
 backup
 *.exe
 *.whl
+nosetests.xml
 glk.o
 tw_games
 .idea/*

@@ -8,6 +8,4 @@ echo executing test
 
 %MSYS%\usr\bin\bash.exe -c "cd dist && PATH_SEPARATOR=: PATH=/usr/bin/ python3.exe -m pip install *.whl"
 %MSYS%\usr\bin\bash.exe -c "PATH=/usr/bin/ tree /usr/lib/python3.7"
-cd tests
-%MSYS%\usr\bin\bash.exe -c "PATH=/usr/bin/ python3.exe -m nose -v"
-cd ..
+%MSYS%\usr\bin\bash.exe -c "PATH=/usr/bin/ python3.exe -m nose -sv --with-xunit --with-coverage --cover-xml --cover-html --cover-package textworld"
