@@ -21,11 +21,14 @@ from gevent import pywsgi
 import logging
 from flask import Flask, request
 import pybars
-
+from textworld.utils import msys_path, is_msys
 from textworld.envs.glulx.git_glulx_ml import GlulxGameState
 from textworld.render import load_state_from_game_state
 
 WEB_SERVER_RESOURCES = pjoin(os.path.abspath(os.path.dirname(__file__)), "tmpl")
+WEB_SERVER_RESOURCES_IN_HTML_PREFIX = ""
+if is_msys():
+    WEB_SERVER_RESOURCES_IN_HTML_PREFIX = msys_path()
 
 
 def get_html_template(game_state=None):
@@ -37,10 +40,9 @@ def get_html_template(game_state=None):
 
     if game_state is None:
         return template
-
     html = template({
         'game_state': game_state,
-        'template_path': WEB_SERVER_RESOURCES,
+        'template_path': WEB_SERVER_RESOURCES_IN_HTML_PREFIX + WEB_SERVER_RESOURCES,
     })
     return html
 

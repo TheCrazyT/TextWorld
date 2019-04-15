@@ -394,8 +394,6 @@ def visualize(world: Union[Game, State, GlulxGameState, World],
     fh, filename = tempfile.mkstemp(suffix=".html", dir=tmpdir, text=True)
     url = 'file://' + filename
     with open(filename, 'w') as f:
-        if is_msys():
-            html = html.replace("/usr/lib","file://%s/usr/lib" % msys_path())
         f.write(html)
 
     img_graph = take_screenshot(url, id="world")
