@@ -21,6 +21,6 @@ REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep 
 %BASH% cp scipy-1.2.1-cp37-cp37m-win_amd64.whl /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
 %BASH% python3.exe -m pip install -v /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
 %BASH% ls /tmp'
-%PIP% install nose wheel
+%PIP% install cffi nose wheel
 
 Set PATH=%PATHBCK%
