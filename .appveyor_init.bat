@@ -5,7 +5,7 @@ IF "%MSYS%"=="" (
 echo executing init
 set BASH=%MSYS%\usr\bin\bash -c 'PATH=/usr/bin 
 set PACMAN=%MSYS%\usr\bin\pacman.exe --noconfirm
-set PIP=%MSYS%\usr\bin\python3.exe -m pip
+set PIP=%MSYS%\usr\bin\%PYTHON_EXE% -m pip
 REM %BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh" | PATH=/usr/bin bash -e -'
 
 Set PATHBCK=%PATH%
