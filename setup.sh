@@ -60,7 +60,7 @@ if [ "${platform}" == "Win" ]; then
 		exit 1
 	fi
 	if [ ! -e I7_6M62_Windows.exe ]; then
-		curl -LO http://inform7.com/download/content/6M62/I7_6M62_Windows.exe
+		curl -LO http://inform7.com/apps/6M62/I7_6M62_Windows.exe
 	fi
 	echo "Installing Inform7 CLI"
 	mkdir -p ./inform7-6M62/share/inform7
