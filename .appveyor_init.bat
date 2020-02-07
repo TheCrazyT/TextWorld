@@ -11,8 +11,9 @@ REM %BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scri
 Set PATHBCK=%PATH%
 
 REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep mingw\)'
+%PACMAN% -Sy msys2-runtime
 %PACMAN% -Syuu
-%PACMAN% -Syuu
+REN %PACMAN% -Syuu
 %PACMAN% -S rebase tree wget python3 python3-setuptools msys/gcc p7zip ncurses-devel python libffi-devel libffi make msys2-runtime python3-pip automake gcc-libs libcrypt libcrypt-devel zlib zlib-devel gcc-fortran mingw-w64-x86_64-ca-certificates
 echo SCIPYURL: %SCIPYURL%
 
