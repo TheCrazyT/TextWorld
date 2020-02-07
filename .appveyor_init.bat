@@ -23,13 +23,15 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% %PYTHON_EXE% -m pip install --upgrade --force-reinstall jericho==1.1.8 numpy==1.16.2'
 %BASH% %PYTHON_EXE% -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
 
+%PIP% install nose wheel
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME%'
+%BASH% ls -lah /tmp'
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported())"'
 %BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME%'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
-%BASH% ls /tmp'
-%PIP% install nose wheel
+
+
 
 Set PATH=%PATHBCK%
