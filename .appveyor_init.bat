@@ -19,8 +19,8 @@ echo SCIPYURL: %SCIPYURL%
 
 %BASH% wget -nc -nv %SCIPYURL%'
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
-%BASH% %PYTHON_EXE% -m pip install cffi jericho==2.4.0'
-%BASH% %PYTHON_EXE% -m pip install --upgrade --force-reinstall numpy==1.16.2'
+%BASH% %PYTHON_EXE% -m pip install cffi'
+%BASH% %PYTHON_EXE% -m pip install --upgrade --force-reinstall jericho==2.4.0 numpy==1.16.2'
 %BASH% %PYTHON_EXE% -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
 
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME%'
