@@ -24,7 +24,11 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% %PYTHON_EXE% -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
 
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME%'
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported())"'
 %BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME%'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
 %BASH% ls /tmp'
 %PIP% install nose wheel
 
