@@ -24,6 +24,8 @@ echo PYTHON VERSION:
 echo pacman versions:
 %PACMAN% -Q
 
+%BASH% %PYTHON_EXE% -m pip install wheel'
+
 echo SCIPYURL: %SCIPYURL%
 %BASH% wget -nc -nv %SCIPYURL%'
 %BASH% ls -lah %SCIPYNAME%'
@@ -34,6 +36,14 @@ echo SUFFIX: %SUFFIX%
 %BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
 FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
 echo SCIPYNAME2: %SCIPYNAME2%
+
+%BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
+%BASH% ls -lah /tmp'
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
+%BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME2%'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
 
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
 %BASH% %PYTHON_EXE% -m pip install https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz'
@@ -55,13 +65,7 @@ echo pip installed versions:
 
 
 
-%BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
-%BASH% ls -lah /tmp'
-%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
-%BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME2%'
-IF %ERRORLEVEL% NEQ 0 (
-	exit 1
-)
+
 
 
 
