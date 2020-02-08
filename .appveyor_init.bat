@@ -29,15 +29,15 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% ls -lah %SCIPYNAME%'
 
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
+%BASH% %PYTHON_EXE% -m pip install https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
 %BASH% %PYTHON_EXE% -m pip install cffi'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% %PYTHON_EXE% -m pip install gevent==1.3.5'
-IF %ERRORLEVEL% NEQ 0 (
-	exit 1
-)
 %BASH% %PYTHON_EXE% -m pip install --upgrade --force-reinstall jericho==1.1.8 numpy==1.16.2'
 %BASH% %PYTHON_EXE% -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
 
