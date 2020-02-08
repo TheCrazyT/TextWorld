@@ -28,6 +28,13 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% wget -nc -nv %SCIPYURL%'
 %BASH% ls -lah %SCIPYNAME%'
 
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported(\"\")[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\suffix) DO SET SUFFIX=%%F
+echo SUFFIX: %SUFFIX%
+%BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
+echo SCIPYNAME2: %SCIPYNAME2%
+
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
 %BASH% %PYTHON_EXE% -m pip install https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz'
 IF %ERRORLEVEL% NEQ 0 (
@@ -46,12 +53,7 @@ IF %ERRORLEVEL% NEQ 0 (
 echo pip installed versions:
 %PIP% list
 
-%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported(\"\")[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
-FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\suffix) DO SET SUFFIX=%%F
-echo SUFFIX: %SUFFIX%
-%BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
-FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
-echo SCIPYNAME2: %SCIPYNAME2%
+
 
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
 %BASH% ls -lah /tmp'
