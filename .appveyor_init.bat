@@ -48,13 +48,6 @@ echo SCIPYNAME2: %SCIPYNAME2%
 %BASH% ls -lah /tmp'
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
 %BASH% %PYTHON_EXE% -m pip install --force-reinstall -v /tmp/%SCIPYNAME2% https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz jericho==1.1.8 numpy==1.16.2 gym==0.12.1 cffi nose'
-%BASH% wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/79.0.3945.36/chromedriver_win32.zip'
-IF %ERRORLEVEL% NEQ 0 (
-	exit 1
-)
-%BASH% unzip -f /tmp/chromedriver.zip -d /bin/'
-%BASH% unzip -f /tmp/chromedriver.zip -d /usr/bin/'
-%BASH% unzip -f /tmp/chromedriver.zip -d /c/Tools/WebDriver'
 %BASH% %PYTHON_EXE% -m pip install --force-reinstall -v pillow --install-option=build_ext --install-option=--disable-jpeg'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
