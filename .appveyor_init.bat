@@ -34,7 +34,7 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% cp scipy-1.2.1-cp37-cp37m-win_amd64.whl /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
 %BASH% python3.exe -m pip install -v /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
 
-%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported()[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported(\"\")[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
 FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\suffix) DO SET SUFFIX=%%F
 echo SUFFIX: %SUFFIX%
 %BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
