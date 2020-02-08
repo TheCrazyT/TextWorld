@@ -46,7 +46,7 @@ echo SCIPYNAME2: %SCIPYNAME2%
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
-%BASH% unzip /tmp/chromedriver.zip -d /usr/bin/'
+%BASH% unzip /tmp/chromedriver.zip -d /bin/'
 %BASH% %PYTHON_EXE% -m pip install --force-reinstall -v pillow --install-option=build_ext --install-option=--disable-jpeg'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
