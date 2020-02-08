@@ -16,10 +16,14 @@ REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep 
 REN %PACMAN% -Syuu
 %BASH% echo installing: rebase tree wget %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools msys/gcc p7zip ncurses-devel python libffi-devel libffi make msys2-runtime python3-pip automake gcc-libs libcrypt libcrypt-devel zlib zlib-devel gcc-fortran mingw-w64-x86_64-ca-certificates'
 
-%BASH% %PYTHON_EXE% -version
+echo PYTHON VERSION:
+%BASH% %PYTHON_EXE% --version
+
 %PACMAN% -S rebase tree wget %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools msys/gcc p7zip ncurses-devel python libffi-devel libffi make msys2-runtime python3-pip automake gcc-libs libcrypt libcrypt-devel zlib zlib-devel gcc-fortran mingw-w64-x86_64-ca-certificates
 echo SCIPYURL: %SCIPYURL%
 %BASH% wget -nc -nv %SCIPYURL%'
+%BASH% ls -lah %SCIPYNAME%'
+
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
 %BASH% %PYTHON_EXE% -m pip install cffi'
 %BASH% %PYTHON_EXE% -m pip install --upgrade --force-reinstall jericho==1.1.8 numpy==1.16.2'
