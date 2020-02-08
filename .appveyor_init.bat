@@ -30,10 +30,21 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% %PYTHON_EXE% -m pip install pillow --global-option=build_ext --global-option=--disable-jpeg'
 
 %PIP% install nose wheel
-%BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME%'
+
+%BASH% cp scipy-1.2.1-cp37-cp37m-win_amd64.whl /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
+%BASH% python3.exe -m pip install -v /tmp/scipy-1.2.1-cp37-cp37m-msys_2_11_2_x86_64.whl'
+
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported()[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\suffix) DO SET SUFFIX=%%F
+echo SUFFIX: %SUFFIX%
+%BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
+echo SCIPYNAME2: %SCIPYNAME2%
+
+%BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
 %BASH% ls -lah /tmp'
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
-%BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME%'
+%BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME2%'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
