@@ -13,6 +13,9 @@ Set PATHBCK=%PATH%
 echo chromedriver:
 %BASH% which chromedriver'
 
+echo chromium-driver:
+%BASH% which chromium-driver'
+
 REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep mingw\)'
 %PACMAN% -Sy msys2-runtime
 %PACMAN% -Syuu
