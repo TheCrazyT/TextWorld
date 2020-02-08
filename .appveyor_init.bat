@@ -24,6 +24,8 @@ echo PYTHON VERSION:
 echo pacman versions:
 %PACMAN% -Q
 
+%BASH% %PYTHON_EXE% -m pip install --upgrade pip'
+%BASH% %PYTHON_EXE% -m pip install wheel'
 
 echo SCIPYURL: %SCIPYURL%
 %BASH% wget -nc -nv %SCIPYURL%'
