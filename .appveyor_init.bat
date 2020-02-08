@@ -41,7 +41,7 @@ echo SCIPYNAME2: %SCIPYNAME2%
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
 %BASH% ls -lah /tmp'
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
-%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v wheel /tmp/%SCIPYNAME2% https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz jericho==1.1.8 numpy==1.16.2 gym==0.12.1 cffi pillow --global-option=build_ext --global-option=--disable-jpeg nose'
+%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v /tmp/%SCIPYNAME2% https://files.pythonhosted.org/packages/e6/0a/fc345c6e6161f84484870dbcaa58e427c10bd9bdcd08a69bed3d6b398bf1/gevent-1.3.5.tar.gz jericho==1.1.8 numpy==1.16.2 gym==0.12.1 cffi pillow --global-option=build_ext --global-option=--disable-jpeg nose'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
