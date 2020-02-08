@@ -10,6 +10,9 @@ REM %BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scri
 
 Set PATHBCK=%PATH%
 
+echo chromedriver:
+%BASH% which chromedriver'
+
 REM %BASH% pacman --noconfirm -R $\(PATH=/usr/bin pacman -Sl|PATH=/usr/bin grep mingw\)'
 %PACMAN% -Sy msys2-runtime
 %PACMAN% -Syuu
@@ -47,6 +50,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 %BASH% unzip /tmp/chromedriver.zip -d /bin/'
+%BASH% unzip /tmp/chromedriver.zip -d /usr/bin/'
 %BASH% %PYTHON_EXE% -m pip install --force-reinstall -v pillow --install-option=build_ext --install-option=--disable-jpeg'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
