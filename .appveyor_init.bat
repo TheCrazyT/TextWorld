@@ -32,7 +32,7 @@ echo SCIPYURL: %SCIPYURL%
 %PIP% install nose wheel
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME%'
 %BASH% ls -lah /tmp'
-%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported())"'
+%BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
 %BASH% %PYTHON_EXE% -m pip install -v /tmp/%SCIPYNAME%'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
