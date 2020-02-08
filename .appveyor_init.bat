@@ -34,7 +34,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% %PYTHON_EXE% -m pip install gevent'
+%BASH% %PYTHON_EXE% -m pip install gevent==1.3.5'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
