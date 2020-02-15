@@ -1,6 +1,5 @@
 echo executing test
 
-set CYGWIN_PATH=c:\cygwin
 set BASH=%CYGWIN_PATH%\bin\bash.exe --login -c '
 
 %BASH% apt-cyg install tree graphviz'
