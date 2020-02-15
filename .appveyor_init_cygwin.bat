@@ -40,7 +40,15 @@ IF %ERRORLEVEL% NEQ 0 (
 
 %ASH% rebaseall -p'
 
-%BASH% %PYTHON_EXE% -m pip install -v jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 cffi nose'
+%BASH% %PYTHON_EXE% -m pip install --global-option=build_ext --global-option=-lssp -v cffi'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
+
+%ASH% rebaseall -p'
+
+
+%BASH% %PYTHON_EXE% -m pip install -v jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 nose'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
