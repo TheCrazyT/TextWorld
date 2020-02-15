@@ -1,5 +1,3 @@
-set CYGWIN_PATH=c:\cygwin
-
 set BASH=%CYGWIN_PATH%\bin\bash.exe --login -c '
 set ASH=%CYGWIN_PATH%\bin\ash.exe -c '
 
