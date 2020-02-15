@@ -9,8 +9,8 @@ set PIP=%MSYS%\usr\bin\%PYTHON_EXE% -m pip
 
 IF "%ENABLE_RDESKTOP%"=="1" (
 	echo enable rdesktop server
-	%BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh"^>/tmp/enable-ssh'
-	%BASH% sh /tmp/enable-ssh'
+	%BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1"^>/c/enable-rdp.ps1'
+	PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& 'c:/enable-rdp.ps1'"
 )
 
 Set PATHBCK=%PATH%
