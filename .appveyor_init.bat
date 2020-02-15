@@ -9,7 +9,7 @@ IF "%BUILD_MSYS%"=="1" (
 	set PIP=%MSYS%\usr\bin\%PYTHON_EXE% -m pip
 
 	IF "%ENABLE_RDESKTOP%"=="1" (
-		%BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh" | PATH=/usr/bin bash -e -'
+		%BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh" ^| PATH=/usr/bin bash -e -'
 	)
 
 	Set PATHBCK=%PATH%
