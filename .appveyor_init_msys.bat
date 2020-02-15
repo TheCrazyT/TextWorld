@@ -11,6 +11,7 @@ IF "%ENABLE_RDESKTOP%"=="1" (
 	echo enable rdesktop server
 	%BASH% curl -sflL "https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1"^>/c/enable-rdp.ps1'
 	PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& 'c:/enable-rdp.ps1'"
+	pause
 )
 
 Set PATHBCK=%PATH%
