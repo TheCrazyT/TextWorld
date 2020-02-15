@@ -74,7 +74,7 @@ if [ "${platform}" == "Win" ]; then
 	fi
 	if [ "${machine}" == "Cygwin" ]; then
 		apt-cyg install libncurses-devel
-		/usr/bin/python3.7.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+		/usr/bin/python3.7 -m pip install tatsu networkx urwid more_itertools jericho hashids
 	fi
 fi
 if [ "${platform}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
