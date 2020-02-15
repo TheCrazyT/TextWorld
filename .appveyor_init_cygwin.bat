@@ -31,7 +31,12 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% CPPFLAGS=-lssp %PYTHON_EXE% -m pip install -v gevent==1.3.5 jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 cffi nose'
+%BASH% %PYTHON_EXE% -m pip install --global-option=build_ext --global-option=-lssp -v gevent==1.3.5'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
+
+%BASH% %PYTHON_EXE% -m pip install -v jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 cffi nose'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
