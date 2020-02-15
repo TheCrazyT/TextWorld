@@ -67,8 +67,14 @@ if [ "${platform}" == "Win" ]; then
 	7z x -y -o./inform7-6M62/share/inform7/ I7_6M62_Windows.exe
 	rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
 	cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-	pacman --noconfirm -S ncurses-devel
-	/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+	if [ "$BUILD_MSYS"=="1"]; then
+		pacman --noconfirm -S ncurses-devel
+		/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+	fi
+	if [ "$BUILD_CYGWIN"=="1"]; then
+		apt-cyg install ncurses-devel
+		/usr/bin/python3.7.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
+	fi
 fi
 if [ "${platform}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
 	echo "Downloading Inform7 for Mac"
