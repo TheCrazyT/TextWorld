@@ -1,6 +1,5 @@
 echo executing build
 Set DISTUTILS_DEBUG=1
-set CYGWIN_PATH=c:\cygwin
 set BASH=%CYGWIN_PATH%\bin\bash.exe --login -c '
 
 echo %CD%
