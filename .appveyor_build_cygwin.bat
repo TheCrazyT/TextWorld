@@ -5,4 +5,4 @@ set BASH=%CYGWIN_PATH%\bin\bash.exe --login -c '
 
 echo %CD%
 %BASH% PATH=/usr/bin/ uname -a'
-%BASH% PATH=/usr/bin/ %PYTHON_EXE% /cygdrive/c/projects/textworld/setup.py -v bdist_wheel 2>&1'
+%BASH% PATH=/usr/bin/ cd /cygdrive/c/projects/textworld/ && PATH=/usr/bin/ %PYTHON_EXE% setup.py -v bdist_wheel 2>&1'
