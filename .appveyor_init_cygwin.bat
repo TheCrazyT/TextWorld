@@ -11,7 +11,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% apt-cyg install %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools %PYTHON_PACKAGE%-devel %PYTHON_PACKAGE%-numpy libopenblas liblapack-devel'
+%BASH% apt-cyg install %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools %PYTHON_PACKAGE%-devel %PYTHON_PACKAGE%-numpy libopenblas liblapack-devel libffi-devel'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
