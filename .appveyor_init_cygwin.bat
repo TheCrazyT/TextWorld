@@ -9,7 +9,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% apt-cyg install %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools %PYTHON_PACKAGE%-devel %PYTHON_PACKAGE%-numpy'
+%BASH% apt-cyg install %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools %PYTHON_PACKAGE%-devel %PYTHON_PACKAGE%-numpy libopenblas'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
