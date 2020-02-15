@@ -54,10 +54,11 @@ then
 	)
 fi
 if [ "${platform}" == "Win" ]; then
-	if [ "${MSYS}" == "" ];
-	then
-		echo "Variable MSYS not set!"
-		exit 1
+	if [ "${machine}" == "MinGW" ]; then
+		if [ "${MSYS}" == "" ]; then
+			echo "Variable MSYS not set!"
+			exit 1
+		fi
 	fi
 	if [ ! -e I7_6M62_Windows.exe ]; then
 		curl -LO http://inform7.com/apps/6M62/I7_6M62_Windows.exe
@@ -67,11 +68,11 @@ if [ "${platform}" == "Win" ]; then
 	7z x -y -o./inform7-6M62/share/inform7/ I7_6M62_Windows.exe
 	rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
 	cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-	if [ "$BUILD_MSYS"=="1" ]; then
+	if [ "${machine}" == "MinGW" ]; then
 		pacman --noconfirm -S ncurses-devel
 		/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 	fi
-	if [ "$BUILD_CYGWIN"=="1" ]; then
+	if [ "${machine}" == "Cygwin" ]; then
 		apt-cyg install ncurses-devel
 		/usr/bin/python3.7.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 	fi
