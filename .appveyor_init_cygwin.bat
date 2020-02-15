@@ -46,7 +46,7 @@ IF %ERRORLEVEL% NEQ 0 (
 %ASH% rebaseall -p'
 
 
-%BASH% %PYTHON_EXE% -m pip install -v jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 nose'
+%BASH% %PYTHON_EXE% -m pip install -v jericho==1.1.8 numpy==1.16.2 gym==0.12.1 scipy==1.2.1 nose coverage'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
