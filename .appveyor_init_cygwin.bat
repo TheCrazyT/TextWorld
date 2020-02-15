@@ -1,7 +1,9 @@
 set CYGWIN_PATH=c:\cygwin
 
 set BASH=%CYGWIN_PATH%\bin\bash.exe --login -c '
-%BASH% wget https://raw.githubusercontent.com/transcode-open/apt-cyg/master/apt-cyg -O /usr/bin/apt-cyg && PATH=/bin/ chmod +x /usr/bin/apt-cyg'
+%BASH% wget https://raw.githubusercontent.com/transcode-open/apt-cyg/master/apt-cyg -O /usr/bin/apt-cyg 
+%BASH% chmod +x /usr/bin/apt-cyg'
+%BASH% ls -la /usr/bin/apt-cyg'
 %BASH% apt-cyg install subversion'
 %BASH% apt-cyg install %PYTHON_PACKAGE% %PYTHON_PACKAGE%-setuptools %PYTHON_PACKAGE%-devel %PYTHON_PACKAGE%-numpy'
 %BASH% apt-cyg install automake zlib zlib-devel gcc-fortran'
