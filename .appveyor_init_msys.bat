@@ -1,11 +1,11 @@
-IF "%MSYS%"=="" (
+IF "%MSYS_PATH%"=="" (
 	echo "Variable MSYS not set!"
 	exit /B 1
 )
 echo executing init
-set BASH=%MSYS%\usr\bin\bash -c 'PATH_SEPARATOR=: PATH=/usr/bin 
-set PACMAN=%MSYS%\usr\bin\pacman.exe --noconfirm
-set PIP=%MSYS%\usr\bin\%PYTHON_EXE% -m pip
+set BASH=%MSYS_PATH%\usr\bin\bash -c 'PATH_SEPARATOR=: PATH=/usr/bin 
+set PACMAN=%MSYS_PATH%\usr\bin\pacman.exe --noconfirm
+set PIP=%MSYS_PATH%\usr\bin\%PYTHON_EXE% -m pip
 
 IF "%ENABLE_RDESKTOP%"=="1" (
 	echo enable rdesktop server
@@ -44,10 +44,10 @@ echo SCIPYURL: %SCIPYURL%
 %BASH% ls -lah %SCIPYNAME%'
 
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(w.get_supported(\"\")[0][2])" ^> /tmp/suffix && ls -la /tmp/suffix'
-FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\suffix) DO SET SUFFIX=%%F
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS_PATH%\tmp\suffix) DO SET SUFFIX=%%F
 echo SUFFIX: %SUFFIX%
 %BASH% echo %SCIPYNAME%^|/usr/bin/sed s/win_amd64/%SUFFIX%/ ^> /tmp/scipyname2'
-FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
+FOR /F "tokens=* usebackq delims=^" %%F IN (%MSYS_PATH%\tmp\scipyname2) DO SET SCIPYNAME2=%%F
 echo SCIPYNAME2: %SCIPYNAME2%
 
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'

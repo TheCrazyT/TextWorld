@@ -66,9 +66,36 @@ def is_msys():
     return platform.system().startswith('MSYS')
     
 def msys_path():
-    msys_bin = os.environ['WD']
-    return msys_bin.replace("\\usr\\bin\\","").replace("\\","/")
+    if 'MSYS_PATH' in os.environ:
+        msys_bin = os.environ['MSYS_PATH']
+        return msys_bin.replace("\\","/")
+    else:
+        return '/c/msys64'
 
+def is_cygwin():
+    return platform.system().startswith('CYGWIN')
+    
+def cygwin_path():
+    if 'CYGWIN_PATH' in os.environ:
+        cygwin_bin = os.environ['CYGWIN_PATH']
+        return cygwin_bin.replace("\\","/")
+    else:
+        if 'PROCESSOR_ARCHITECTURE' in os.environ:
+            if os.environ['PROCESSOR_ARCHITECTURE'].index('AMD64')==-1:
+                return '/cygdrive/c/cygwin'
+        return '/cygdrive/c/cygwin64'
+
+def cygwin_winpath():
+    if 'CYGWIN_PATH' in os.environ:
+        cygwin_bin = os.environ['CYGWIN_PATH']
+        return cygwin_bin
+    else:
+        if 'PROCESSOR_ARCHITECTURE' in os.environ:
+            if os.environ['PROCESSOR_ARCHITECTURE'].index('AMD64')==-1:
+                return 'c:\\cygwin'
+        return 'c:\\cygwin64'
+
+    
 def get_webdriver(path=None):
     """
     Get the driver and options objects.

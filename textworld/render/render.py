@@ -16,7 +16,7 @@ from textworld.logic import Proposition, Action
 from textworld.envs.glulx.git_glulx_ml import GlulxGameState
 from textworld.logic import State
 from textworld.generator import World, Game
-from textworld.utils import maybe_mkdir, get_webdriver, msys_path, is_msys
+from textworld.utils import maybe_mkdir, get_webdriver, msys_path, is_msys, cygwin_path, is_cygwin
 
 from textworld.generator.game import EntityInfo
 from textworld.generator.data import KnowledgeBase
@@ -326,6 +326,13 @@ def take_screenshot(url: str, id: str='world'):
             url = url.replace("file://","file://%s" % msys_path())
         else:
             url = url.replace("/c/","c:/")
+            url = url.replace("/d/","d:/")
+    elif is_cygwin():
+        if(os.environ["TEMP"]=="/tmp"):
+            url = url.replace("file://","file://%s" % msys_path())
+        else:
+            url = url.replace("/cygdrive/c/","c:/")
+            url = url.replace("/cygdrive/d/","d:/")
 
     driver.get(url)
     svg = driver.find_element_by_id(id)

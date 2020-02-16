@@ -1,10 +1,10 @@
-IF "%MSYS%"=="" (
+IF "%MSYS_PATH%"=="" (
 	echo "Variable MSYS not set!"
 	exit /B 1
 )
 echo executing test
-set BASH=%MSYS%\usr\bin\bash -c "PATH=/usr/bin 
-set PACMAN=%MSYS%\usr\bin\pacman.exe --noconfirm
+set BASH=%MSYS_PATH%\usr\bin\bash -c "PATH=/usr/bin 
+set PACMAN=%MSYS_PATH%\usr\bin\pacman.exe --noconfirm
 
 %PACMAN% -S mingw-w64-x86_64-graphviz
 %BASH% rebaseall -p"
