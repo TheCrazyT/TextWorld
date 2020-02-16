@@ -22,4 +22,4 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 %BASH% PATH=/usr/bin/ tree /usr/lib/python3.7'
-%BASH% PATH=/usr/bin/ %PYTHON_EXE% -m nose -sv --with-xunit --with-coverage --cover-xml --cover-html --cover-package textworld'
+%BASH% cd /cygdrive/c/projects/textworld ^&^& PATH=/usr/bin/ %PYTHON_EXE% -m nose -sv --with-xunit --with-coverage --cover-xml --cover-html --cover-package textworld'
