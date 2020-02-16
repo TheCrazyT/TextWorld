@@ -73,6 +73,7 @@ if [ "${platform}" == "Win" ]; then
 		/usr/bin/python3.exe -m pip install tatsu networkx urwid more_itertools jericho hashids
 	fi
 	if [ "${machine}" == "Cygwin" ]; then
+		find  -name "*.exe" -exec chmod +x {} \;
 		apt-cyg install libncurses-devel
 		/usr/bin/python3.7 -m pip install tatsu networkx urwid more_itertools jericho hashids
 	fi
