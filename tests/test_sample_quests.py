@@ -18,7 +18,10 @@ def test_sample_quests():
         check_output(command).decode()
 
         script = pjoin(SCRIPTS_PATH, "sample_quests.py")
-        command = ["python", script, "--nb-quests", "10", "--quest-length", "10", "--quest-breadth", "5", "--output", tmpdir, game_file]
+        python_exe = "python"
+        if 'PYTHON_EXE' in os.environ:
+            python_exe = os.environ["PYTHON_EXE"]
+        command = [python_exe, script, "--nb-quests", "10", "--quest-length", "10", "--quest-breadth", "5", "--output", tmpdir, game_file]
         stdout = check_output(command).decode()
         assert len(stdout) > 0
         assert os.path.isfile(pjoin(tmpdir, "sample_world.png"))

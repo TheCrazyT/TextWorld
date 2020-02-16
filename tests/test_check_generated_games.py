@@ -22,8 +22,8 @@ def test_check_generated_game():
         game_files = [pjoin(tmpdir, f) for f in os.listdir(tmpdir) if f.endswith(".ulx")]
         assert len(game_files) == NB_GAMES
         python_exe = "python"
-        if 'PYTHON_EXE' in os.env:
-            python_exe = os.env["PYTHON_EXE"]
+        if 'PYTHON_EXE' in os.environ:
+            python_exe = os.environ["PYTHON_EXE"]
         command = [python_exe, script] + game_files
         stdout = check_output(command).decode()
         for file in game_files:
