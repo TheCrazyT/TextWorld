@@ -18,7 +18,7 @@ from textworld.utils import make_temp_directory, str2bool, chunk
 from textworld.generator.game import Game
 from textworld.generator.world import WorldRoom, WorldEntity
 from textworld.logic import Signature, Proposition, Action
-
+from textworld.utils import is_cygwin, cygwin_winpath
 
 I7_DEFAULT_PATH = resource_filename(Requirement.parse('textworld'), 'textworld/thirdparty/inform7-6M62')
 
@@ -948,6 +948,12 @@ def compile_inform7_game(source: str, output: str, verbose: bool = False) -> Non
         i6 = pjoin(INFORM_HOME, "share", "inform7", "Compilers", "inform6")
         i7_internal = pjoin(INFORM_HOME, "share", "inform7", "Internal")
 
+        
+        if is_cygwin():
+            project_folder = cygwin_winpath() + project_folder.replace("/","\\")
+            i7_internal = cygwin_winpath() + i7_internal.replace("/usr/lib","/lib").replace("/","\\")
+        
+        
         # Compile story file.
         cmd = [ni, "--internal", i7_internal, "--format={}".format(ext),
                "--project", project_folder]
@@ -980,6 +986,11 @@ def compile_inform7_game(source: str, output: str, verbose: bool = False) -> Non
         i6_options += "E2wS"
         i6_options += "G" if ext == ".ulx" else "v8"
         i6_options += "F0"  # Use extra memory rather than temporary files.
+        
+        if is_cygwin():
+            i6_input_filename = cygwin_winpath() + i6_input_filename.replace("/","\\")
+            output = cygwin_winpath() + output.replace("/","\\")
+
         cmd = [i6, i6_options, i6_input_filename, output]
 
         if verbose:
