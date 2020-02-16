@@ -55,3 +55,9 @@ IF %ERRORLEVEL% NEQ 0 (
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
+
+echo installed versions
+%BASH% apt-cyg list'
+
+echo pip installed versions:
+%BASH% %PYTHON_EXE% -m pip list'

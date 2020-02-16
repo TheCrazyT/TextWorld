@@ -55,7 +55,7 @@ then
 fi
 if [ "${platform}" == "Win" ]; then
 	if [ "${machine}" == "MinGW" ]; then
-		if [ "${MSYS}" == "" ]; then
+		if [ "${MSYS_PATH}" == "" ]; then
 			echo "Variable MSYS not set!"
 			exit 1
 		fi

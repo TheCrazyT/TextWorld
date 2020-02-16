@@ -13,4 +13,4 @@ set PACMAN=%MSYS_PATH%\usr\bin\pacman.exe --noconfirm
 %BASH% cp /tmp/chromedriver.exe /usr/bin/"
 %BASH% cd dist && PATH_SEPARATOR=: PATH=/usr/bin/ python3.exe -m pip install *.whl"
 %BASH% PATH=/usr/bin/ tree /usr/lib/python3.7"
-%BASH% PATH=/usr/bin/:/mingw64/bin python3.exe -m nose -sv --with-xunit --with-coverage --cover-xml --cover-html --cover-package textworld"
+%BASH% PATH=/usr/bin/:/mingw64/bin %PYTHON_EXE% -m nose -sv --with-xunit --with-coverage --cover-xml --cover-html --cover-package textworld ^&^& %PYTHON_EXE% -m nose tests/test*"
