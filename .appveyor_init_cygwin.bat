@@ -31,7 +31,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% %PYTHON_EXE% -m pip install --global-option=build_ext --global-option=-lssp -v gevent==1.3.5'
+%BASH% %PYTHON_EXE% -m pip install --global-option=build_ext --global-option=-lssp -v gevent==1.3.5 greenlet==0.4.14'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
