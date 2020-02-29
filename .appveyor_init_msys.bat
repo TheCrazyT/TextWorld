@@ -38,6 +38,9 @@ echo pacman versions:
 
 %BASH% %PYTHON_EXE% -m pip install --upgrade pip'
 %BASH% %PYTHON_EXE% -m pip install wheel'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
 
 echo SCIPYURL: %SCIPYURL%
 %BASH% wget -nc -nv %SCIPYURL%'
@@ -60,6 +63,11 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 %BASH% %PYTHON_EXE% -m pip install --force-reinstall -v pillow --install-option=build_ext --install-option=--disable-jpeg'
+IF %ERRORLEVEL% NEQ 0 (
+	exit 1
+)
+
+%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v greenlet==0.4.14'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
