@@ -67,7 +67,7 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 
-%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v greenlet==0.4.14'
+%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v greenlet==0.4.13'
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
