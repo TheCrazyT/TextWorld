@@ -53,7 +53,7 @@ echo SCIPYNAME2: %SCIPYNAME2%
 %BASH% cp %SCIPYNAME% /tmp/%SCIPYNAME2%'
 %BASH% ls -lah /tmp'
 %BASH% %PYTHON_EXE% -c "import wheel.pep425tags as w;print(\"supported wheels:\"); print(w.get_supported(\"\"))"'
-%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v --global-option=build_ext --global-option=-lssp -v gevent==1.3.5 greenlet==0.4.14
+%BASH% %PYTHON_EXE% -m pip install --force-reinstall -v --global-option=build_ext --global-option=-lssp -v gevent==1.3.5
 IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
