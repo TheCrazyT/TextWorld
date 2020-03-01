@@ -22,4 +22,4 @@ IF %ERRORLEVEL% NEQ 0 (
 	exit 1
 )
 %BASH% PATH=/usr/bin/ tree /usr/lib/python3.7'
-%BASH% cd /cygdrive/c/projects/textworld/tests ^&^& %PYTHON_EXE% -m nose -sv test*'
+%BASH% cd /cygdrive/c/projects/textworld/tests ^&^& %PYTHON_EXE% -m nose --with-xunit -sv test*'
