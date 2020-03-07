@@ -6,28 +6,27 @@ import unittest
 import textwrap
 from typing import Iterable
 
-import numpy as np
 import numpy.testing as npt
 
 import textworld
 from textworld import g_rng
 from textworld import GameMaker
-from textworld.utils import make_temp_directory
 
 from textworld.generator.data import KnowledgeBase
 from textworld.generator import World
-from textworld.generator import make_small_map, make_grammar, make_game_with
+from textworld.generator import make_small_map
 
 from textworld.generator.chaining import ChainingOptions, sample_quest
-from textworld.logic import Action, State
+from textworld.logic import Action
 
+from textworld.generator.game import GameOptions
 from textworld.generator.game import Quest, Game, Event
 from textworld.generator.game import QuestProgression, GameProgression, EventProgression
 from textworld.generator.game import UnderspecifiedEventError, UnderspecifiedQuestError
 from textworld.generator.game import ActionDependencyTree, ActionDependencyTreeElement
 from textworld.generator.inform7 import Inform7Game
 
-from textworld.logic import Proposition
+from textworld.logic import GameLogic
 
 
 def _find_action(command: str, actions: Iterable[Action], inform7: Inform7Game) -> None:
@@ -63,6 +62,36 @@ def test_game_comparison():
     options.seeds = {"map": 4, "objects": 3, "quest": 2, "grammar": 1}
     game3 = textworld.generator.make_game(options)
     assert game1 != game3
+
+
+def test_reloading_game_with_custom_kb():
+    twl = KnowledgeBase.default().logic._document
+    twl += """
+        type customobj : o {
+            inform7 {
+                type {
+                    kind :: "custom-obj-like";
+                }
+            }
+        }
+    """
+
+    logic = GameLogic.parse(twl)
+    options = GameOptions()
+    options.kb = KnowledgeBase(logic, "")
+    M = GameMaker(options)
+
+    room = M.new_room("room")
+    M.set_player(room)
+
+    custom_obj = M.new(type='customobj', name='customized object')
+    M.inventory.add(custom_obj)
+
+    commands = ["drop customized object"]
+    quest = M.set_quest_from_commands(commands)
+    assert quest.commands == tuple(commands)
+    game = M.build()
+    assert game == Game.deserialize(game.serialize())
 
 
 def test_variable_infos(verbose=False):
@@ -168,10 +197,10 @@ class TestQuest(unittest.TestCase):
 
         cls.eventA = M.new_event_using_commands(commands)
         cls.eventB = Event(conditions={M.new_fact("at", carrot, R1),
-                                            M.new_fact("closed", path.door)})
+                                       M.new_fact("closed", path.door)})
         cls.eventC = Event(conditions={M.new_fact("eaten", carrot)})
         cls.eventD = Event(conditions={M.new_fact("closed", chest),
-                                            M.new_fact("closed", path.door)})
+                                       M.new_fact("closed", path.door)})
         cls.quest = Quest(win_events=[cls.eventA, cls.eventB],
                           fail_events=[cls.eventC, cls.eventD],
                           reward=2)
@@ -392,7 +421,7 @@ class TestGame(unittest.TestCase):
             'lock {d} with {k}', 'look', 'open {c}', 'open {d}', 'put {o} on {s}',
             'take {o}', 'take {o} from {c}', 'take {o} from {s}',
             'unlock {c} with {k}', 'unlock {d} with {k}'
-            }
+        }
         assert set(self.game.command_templates) == expected_templates
 
     def test_serialization(self):
@@ -410,7 +439,6 @@ class TestGame(unittest.TestCase):
 
 
 class TestEventProgression(unittest.TestCase):
-
 
     @classmethod
     def setUpClass(cls):
@@ -498,8 +526,8 @@ class TestQuestProgression(unittest.TestCase):
         commands = ["take lettuce", "insert lettuce into chest", "close chest"]
         event = M.new_event_using_commands(commands)
         cls.eventB = Event(actions=event.actions,
-                                conditions={M.new_fact("in", lettuce, chest),
-                                            M.new_fact("closed", chest)})
+                           conditions={M.new_fact("in", lettuce, chest),
+                                       M.new_fact("closed", chest)})
 
         cls.fail_eventA = Event(conditions={M.new_fact("eaten", carrot)})
         cls.fail_eventB = Event(conditions={M.new_fact("eaten", lettuce)})
@@ -511,7 +539,6 @@ class TestQuestProgression(unittest.TestCase):
         cls.eating_carrot = M.new_event_using_commands(commands)
         commands = ["take lettuce", "eat lettuce"]
         cls.eating_lettuce = M.new_event_using_commands(commands)
-        commands = ["take lettuce", "insert lettuce into chest"]
 
         M.quests = [cls.quest]
         cls.game = M.build()
@@ -601,6 +628,11 @@ class TestGameProgression(unittest.TestCase):
         R1.add(carrot)
         R1.add(lettuce)
 
+        tomato = M.new(type='f', name='tomato')
+        pepper = M.new(type='f', name='pepper')
+        M.inventory.add(tomato)
+        M.inventory.add(pepper)
+
         # Add a closed chest in R2.
         chest = M.new(type='c', name='chest')
         chest.add_property("open")
@@ -613,25 +645,32 @@ class TestGameProgression(unittest.TestCase):
         commands = ["open wooden door", "go west", "take lettuce", "go east", "insert lettuce into chest"]
         cls.eventB = M.new_event_using_commands(commands)
 
+        commands = ["drop pepper"]
+        cls.eventC = M.new_event_using_commands(commands)
+
         cls.losing_eventA = Event(conditions={M.new_fact("eaten", carrot)})
         cls.losing_eventB = Event(conditions={M.new_fact("eaten", lettuce)})
 
         cls.questA = Quest(win_events=[cls.eventA], fail_events=[cls.losing_eventA])
         cls.questB = Quest(win_events=[cls.eventB], fail_events=[cls.losing_eventB])
-        cls.questC = Quest(win_events=[], fail_events=[cls.losing_eventA, cls.losing_eventB])
+        cls.questC = Quest(win_events=[cls.eventC], fail_events=[])
+        cls.questD = Quest(win_events=[], fail_events=[cls.losing_eventA, cls.losing_eventB])
 
         commands = ["open wooden door", "go west", "take carrot", "eat carrot"]
         cls.eating_carrot = M.new_event_using_commands(commands)
         commands = ["open wooden door", "go west", "take lettuce", "eat lettuce"]
         cls.eating_lettuce = M.new_event_using_commands(commands)
-        commands = ["open wooden door", "go west", "take lettuce", "go east", "insert lettuce into chest"]
+        commands = ["eat tomato"]
+        cls.eating_tomato = M.new_event_using_commands(commands)
+        commands = ["eat pepper"]
+        cls.eating_pepper = M.new_event_using_commands(commands)
 
         M.quests = [cls.questA, cls.questB, cls.questC]
         cls.game = M.build()
 
     def test_completed(self):
         game = GameProgression(self.game)
-        for action in self.eventA.actions:
+        for action in self.eventA.actions + self.eventC.actions:
             assert not game.done
             game.update(action)
 
@@ -649,6 +688,22 @@ class TestGameProgression(unittest.TestCase):
         assert game.winning_policy is None
 
     def test_failed(self):
+        game = GameProgression(self.game)
+        action = self.eating_tomato.actions[0]
+        game.update(action)
+        assert not game.done
+        assert not game.completed
+        assert not game.failed
+        assert game.winning_policy is not None
+
+        game = GameProgression(self.game)
+        action = self.eating_pepper.actions[0]
+        game.update(action)
+        assert not game.completed
+        assert game.failed
+        assert game.done
+        assert game.winning_policy is None
+
         game = GameProgression(self.game)
         for action in self.eating_carrot.actions:
             assert not game.done
@@ -806,7 +861,7 @@ class TestGameProgression(unittest.TestCase):
         quest3 = M.new_quest_using_commands(commands[0] + commands[1] + commands[2])
         winning_facts = [M.new_fact("in", lettuce, chest),
                          M.new_fact("in", carrot, chest),
-                         M.new_fact("closed", chest),]
+                         M.new_fact("closed", chest)]
         quest3.win_events[0].set_conditions(winning_facts)
         quest3.desc = "Put the lettuce and the carrot into the chest before closing it."
 

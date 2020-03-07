@@ -17,7 +17,8 @@ import sys
 
 from tatsu.buffering import Buffer
 from tatsu.parsing import Parser
-from tatsu.parsing import tatsumasu
+from tatsu.parsing import tatsumasu, leftrec, nomemo
+from tatsu.parsing import leftrec, nomemo  # noqa
 from tatsu.util import re, generic_main  # noqa
 
 
@@ -87,6 +88,15 @@ class TextGrammarParser(Parser):
     def _literal_(self):  # noqa
         self._pattern('(([^;|<>\\n\\[\\]()]|\\[[^\\[\\]]*\\]|\\([^()]*\\))+(?<!\\s))?')
 
+    @tatsumasu('Literal')
+    def _literalAlternative_(self):  # noqa
+        self._literal_()
+        self.name_last_node('value')
+        self.ast._define(
+            ['value'],
+            []
+        )
+
     @tatsumasu('AdjectiveNoun')
     def _adjectiveNoun_(self):  # noqa
         self._literal_()
@@ -105,7 +115,7 @@ class TextGrammarParser(Parser):
             with self._option():
                 self._adjectiveNoun_()
             with self._option():
-                self._literal_()
+                self._literalAlternative_()
             self._error('no available options')
 
     @tatsumasu('Match')
@@ -181,6 +191,9 @@ class TextGrammarSemantics(object):
         return ast
 
     def literal(self, ast):  # noqa
+        return ast
+
+    def literalAlternative(self, ast):  # noqa
         return ast
 
     def adjectiveNoun(self, ast):  # noqa

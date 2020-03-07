@@ -14,9 +14,10 @@ from numpy.random import RandomState
 from textworld import g_rng
 from textworld.utils import maybe_mkdir, str2bool
 from textworld.logic import State
-from textworld.generator.chaining import ChainingOptions, sample_quest
+from textworld.generator.chaining import ChainingOptions, QuestGenerationError
+from textworld.generator.chaining import sample_quest
 from textworld.generator.world import World
-from textworld.generator.game import Game, Quest, Event, World, GameOptions
+from textworld.generator.game import Game, Quest, Event, GameOptions
 from textworld.generator.graph_networks import create_map, create_small_map
 from textworld.generator.text_generation import generate_text_from_grammar
 
@@ -31,10 +32,6 @@ from textworld.generator.logger import GameLogger
 
 
 class GenerationWarning(UserWarning):
-    pass
-
-
-class NoSuchQuestExistError(NameError):
     pass
 
 
@@ -133,21 +130,17 @@ def make_quest(world: Union[World, State], options: Optional[GameOptions] = None
     chains = []
     for _ in range(options.nb_parallel_quests):
         chain = sample_quest(state, options.chaining)
-        if chain is None:
-            msg = "No quest can be generated with the provided options."
-            raise NoSuchQuestExistError(msg)
-
         chains.append(chain)
         state = chain.initial_state  # State might have changed, i.e. options.create_variable is True.
 
     if options.chaining.backward and hasattr(world, "state"):
-        world.state = state
+        world.state = state  # Quest(s) might have change the world state.
 
     quests = []
     actions = []
     for chain in reversed(chains):
         for i in range(1, len(chain.nodes)):
-            actions.append(chain.actions[i-1])
+            actions.append(chain.actions[i - 1])
             if chain.nodes[i].breadth != chain.nodes[i - 1].breadth:
                 event = Event(actions)
                 quests.append(Quest(win_events=[event]))
@@ -212,8 +205,7 @@ def make_game(options: GameOptions) -> Game:
         world.populate(nb_distractors, rng=rngs['objects'])
 
     grammar = make_grammar(options.grammar, rng=rngs['grammar'])
-    game = make_game_with(world, quests, grammar)
-    game.change_grammar(grammar)
+    game = Game(world, grammar, quests)
     game.metadata["uuid"] = options.uuid
 
     return game

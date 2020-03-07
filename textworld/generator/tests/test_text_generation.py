@@ -10,8 +10,7 @@ import textworld
 from textworld import g_rng
 
 import textworld.agents
-from textworld.generator import World, Quest
-from textworld.generator.chaining import sample_quest
+from textworld.generator import World
 from textworld.logic import Variable, Proposition
 
 
@@ -39,8 +38,6 @@ def test_used_names_is_updated(verbose=False):
 
     # Generate the world representation.
     grammar = textworld.generator.make_grammar({}, rng=np.random.RandomState(42))
-    for k, v in grammar.grammar.items():
-        grammar.grammar[k] = v[:2]  # Force reusing variables.
 
     game = textworld.generator.make_game_with(world, [], grammar)
     for entity_infos in game.infos.values():

@@ -2,9 +2,11 @@
 # Licensed under the MIT license.
 
 
+import glob
 import shutil
 import tempfile
 import unittest
+from os.path import join as pjoin
 
 import numpy as np
 
@@ -15,74 +17,100 @@ from textworld.utils import make_temp_directory
 
 class TestIntegration(unittest.TestCase):
 
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="test_textworld")
+    @classmethod
+    def setUpClass(cls):
+        cls.tmpdir = pjoin(tempfile.mkdtemp(prefix="test_textworld"), "")
         options = textworld.GameOptions()
-        options.path = self.tmpdir
+        options.path = cls.tmpdir
         options.nb_rooms = 5
         options.nb_objects = 10
         options.quest_length = 10
         options.seeds = 1234
-        self.game_file, self.game = textworld.make(options)
+        cls.game_file, cls.game = textworld.make(options)
+        options.file_ext = ".z8"
+        cls.game_file_z8, _ = textworld.make(options)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmpdir)
+
+    def setUp(self):
+        self.before_tw = glob.glob(pjoin(tempfile.gettempdir(), "tw_*"))
+        self.before_mlglk = glob.glob(pjoin(tempfile.gettempdir(), "mlglk_*"))
 
     def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+        # Check for file leaks.
+        after_tw = glob.glob(pjoin(tempfile.gettempdir(), "tw_*"))
+        after_mlglk = glob.glob(pjoin(tempfile.gettempdir(), "mlglk_*"))
+        assert set(after_tw) == set(self.before_tw)
+        assert set(after_mlglk) == set(self.before_mlglk)
 
     def test_100_sequential_runs(self):
-        for i in range(1, 100):
-            env = textworld.start(self.game_file)
-            env.reset()
-            game_state, reward, done = env.step('take inventory')
+        for gamefile in [self.game_file, self.game_file_z8]:
+            for _ in range(100):
+                env = textworld.start(gamefile)
+                env.reset()
+                game_state, reward, done = env.step('take inventory')
+                self.assertIsNotNone(game_state, "Checking gamestate is not None")
+                self.assertIsNotNone(reward, "Checking reward is not None")
+                self.assertFalse(done, "Checking we don't finish the game by looking at our stuff")
+                env.close()
+
+    def test_simultaneous_runs(self):
+        envs = []
+        for gamefile in [self.game_file, self.game_file_z8]:
+            for _ in range(100):
+                env = textworld.start(gamefile)
+                env.reset()
+                envs.append(env)
+
+            game_state, reward, done = envs[-1].step('take inventory')
             self.assertIsNotNone(game_state, "Checking gamestate is not None")
             self.assertIsNotNone(reward, "Checking reward is not None")
             self.assertFalse(done, "Checking we don't finish the game by looking at our stuff")
 
-    def test_simultaneous_runs(self):
-        envs = []
-        for i in range(1, 100):
-            env = textworld.start(self.game_file)
-            env.reset()
-            envs.append(env)
-
-        game_state, reward, done = envs[-1].step('take inventory')
-        self.assertIsNotNone(game_state, "Checking gamestate is not None")
-        self.assertIsNotNone(reward, "Checking reward is not None")
-        self.assertFalse(done, "Checking we don't finish the game by looking at our stuff")
+        for env in envs:
+            env.close()
 
     def test_game_random_agent(self):
-        env = textworld.start(self.game_file)
-        agent = textworld.agents.RandomCommandAgent()
-        agent.reset(env)
-        game_state = env.reset()
+        for gamefile in [self.game_file, self.game_file_z8]:
+            env = textworld.start(gamefile)
+            agent = textworld.agents.RandomCommandAgent()
+            agent.reset(env)
+            game_state = env.reset()
 
-        reward = 0
-        done = False
-        for _ in range(5):
-            command = agent.act(game_state, reward, done)
-            game_state, reward, done = env.step(command)
+            reward = 0
+            done = False
+            for _ in range(5):
+                command = agent.act(game_state, reward, done)
+                game_state, reward, done = env.step(command)
 
     def test_game_walkthrough_agent(self):
         agent = textworld.agents.WalkthroughAgent()
-        env = textworld.start(self.game_file)
-        env.activate_state_tracking()
-        commands = self.game.main_quest.commands
-        agent.reset(env)
-        game_state = env.reset()
 
-        reward = 0
-        done = False
-        for walkthrough_command in commands:
-            self.assertFalse(done, 'walkthrough finished game too early')
-            command = agent.act(game_state, reward, done)
-            self.assertEqual(walkthrough_command, command, "Walkthrough agent issued unexpected command")
-            game_state, reward, done = env.step(command)
-        self.assertTrue(done, 'Walkthrough did not finish the game')
+        for gamefile in [self.game_file, self.game_file_z8]:
+
+            env = textworld.start(gamefile)
+
+            agent.reset(env)
+            game_state = env.reset()
+            commands = game_state.get("extra.walkthrough")
+
+            reward = 0
+            done = False
+            for walkthrough_command in commands:
+                self.assertFalse(done, 'walkthrough finished game too early')
+                command = agent.act(game_state, reward, done)
+                self.assertEqual(walkthrough_command, command, "Walkthrough agent issued unexpected command")
+                game_state, reward, done = env.step(command)
+
+            self.assertTrue(done, 'Walkthrough did not finish the game')
 
 
 def test_playing_generated_games():
     NB_GAMES = 10
     rng = np.random.RandomState(1234)
-    for i in range(NB_GAMES):
+    for _ in range(NB_GAMES):
 
         # Sample game specs.
         world_size = rng.randint(1, 10)
@@ -99,7 +127,7 @@ def test_playing_generated_games():
             options.chaining.max_depth = quest_depth
             options.chaining.max_breadth = quest_breadth
             options.seeds = game_seed
-            game_file, game = textworld.make(options)
+            game_file, _ = textworld.make(options)
 
             # Solve the game using WalkthroughAgent.
             agent = textworld.agents.WalkthroughAgent()
@@ -108,10 +136,11 @@ def test_playing_generated_games():
             # Play the game using RandomAgent and make sure we can always finish the
             # game by following the winning policy.
             env = textworld.start(game_file)
+            env.infos.policy_commands = True
+            env.infos.game = True
 
             agent = textworld.agents.RandomCommandAgent()
             agent.reset(env)
-            env.compute_intermediate_reward()
 
             env.seed(4321)
             game_state = env.reset()
@@ -124,19 +153,10 @@ def test_playing_generated_games():
                 game_state, reward, done = env.step(command)
 
                 if done:
-                    msg = "Finished before playing `max_steps` steps because of command '{}'.".format(command)
-                    if game_state.has_won:
-                        msg += " (winning)"
-                        assert game_state._game_progression.winning_policy is None
-
-                    if game_state.has_lost:
-                        msg += " (losing)"
-                        assert game_state._game_progression.winning_policy is None
-
-                    print(msg)
-                    break
+                    assert game_state._winning_policy is None
+                    game_state, reward, done = env.reset(), 0, False
 
                 # Make sure the game can still be solved.
-                winning_policy = game_state._game_progression.winning_policy
+                winning_policy = game_state._winning_policy
                 assert len(winning_policy) > 0
-                assert game_state.state.is_sequence_applicable(winning_policy)
+                assert game_state._game_progression.state.is_sequence_applicable(winning_policy)

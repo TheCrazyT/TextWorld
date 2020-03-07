@@ -5,7 +5,6 @@ import os
 from os.path import join as pjoin
 from subprocess import check_output
 
-import textworld
 from textworld.utils import make_temp_directory
 
 SCRIPTS_PATH = os.path.abspath(pjoin(__file__, "..", "..", "scripts"))
@@ -21,7 +20,8 @@ def test_sample_quests():
         python_exe = "python"
         if 'PYTHON_EXE' in os.environ:
             python_exe = os.environ["PYTHON_EXE"]
-        command = [python_exe, script, "--nb-quests", "10", "--quest-length", "10", "--quest-breadth", "5", "--output", tmpdir, game_file]
+        command = [python_exe, script, "--nb-quests", "10", "--quest-length", "10",
+                   "--quest-breadth", "5", "--output", tmpdir, game_file]
         stdout = check_output(command).decode()
         assert len(stdout) > 0
         assert os.path.isfile(pjoin(tmpdir, "sample_world.png"))

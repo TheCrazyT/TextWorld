@@ -2,13 +2,14 @@
 # Licensed under the MIT license.
 
 
-from textworld import testing
 from textworld.generator.data import KnowledgeBase
-from textworld.generator.chaining import ChainingOptions, get_chains
+from textworld.generator.chaining import ChainingOptions, QuestGenerationError
+from textworld.generator.chaining import get_chains, sample_quest
 from textworld.logic import GameLogic, Proposition, State, Variable
 
+import numpy.testing as npt
 
-# noinspection PyPep8Naming
+
 def build_state(locked_door=False):
     # Set up a world with two rooms and a few objecs.
     P = Variable("P")
@@ -22,7 +23,7 @@ def build_state(locked_door=False):
     cabinet = Variable("cabinet", "c")
     robe = Variable("robe", "o")
 
-    state = State([
+    state = State(KnowledgeBase.default().logic, [
         Proposition("at", [P, bedroom]),
         Proposition("south_of", [kitchen, bedroom]),
         Proposition("north_of", [bedroom, kitchen]),
@@ -71,6 +72,9 @@ def test_chaining():
     chains = list(get_chains(state, options))
     assert len(chains) == 0
 
+    # Since there are no chains, trying to sample a quest will raise an error.
+    npt.assert_raises(QuestGenerationError, sample_quest, state, options)
+
     # The door is now closed instead of locked.
     state = build_state(locked_door=False)
     chains = list(get_chains(state, options))
@@ -104,7 +108,7 @@ def test_going_through_door():
     P = Variable("P", "P")
     room = Variable("room", "r")
     kitchen = Variable("kitchen", "r")
-    state = State()
+    state = State(KnowledgeBase.default().logic)
     state.add_facts([
         Proposition("at", [P, room]),
         Proposition("north_of", [kitchen, room]),
@@ -127,6 +131,12 @@ def test_going_through_door():
 
     chains = list(get_chains(state, options))
     assert len(chains) == 18
+    # print()
+    # for i, chain in enumerate(chains):
+    #     actions = ["{}({})".format(n.action.name, ", ".join(v.name for v in n.action.variables)) for n in chain.nodes[::-1]]
+    #     msg = " -> ".join(actions)
+    #     print("{:2d}. {}".format(i + 1, msg))
+    #
     # 1. take/c(P, room, c_0, o_0, I)
     # 2. take/c(P, room, c_0, o_0, I) -> go/north(P, r_0, room)
     # 3. take/c(P, room, c_0, o_0, I) -> go/north(P, r_0, room) -> open/d(P, r_0, d_0, room)
@@ -151,7 +161,7 @@ def test_backward_chaining():
     P = Variable("P", "P")
     room = Variable("room", "r")
     kitchen = Variable("kitchen", "r")
-    state = State([
+    state = State(KnowledgeBase.default().logic, [
         Proposition("at", [P, room]),
         Proposition("north_of", [kitchen, room]),
         Proposition("south_of", [room, kitchen]),
@@ -207,7 +217,7 @@ def test_parallel_quests():
     """)
     kb = KnowledgeBase(logic, "")
 
-    state = State([
+    state = State(kb.logic, [
         Proposition.parse("a(foo)"),
         Proposition.parse("b(foo)"),
         Proposition.parse("c(foo)"),
@@ -239,11 +249,12 @@ def test_parallel_quests():
     assert chains[0].nodes[1].parent == chains[0].nodes[2]
     assert chains[0].nodes[2].depth == 1
     assert chains[0].nodes[2].breadth == 1
-    assert chains[0].nodes[2].parent == None
+    assert chains[0].nodes[2].parent is None
 
     options.min_breadth = 1
     options.create_variables = True
-    chains = list(get_chains(State(), options))
+    state = State(kb.logic)
+    chains = list(get_chains(state, options))
     assert len(chains) == 5
 
 
@@ -294,7 +305,7 @@ def test_parallel_quests_navigation():
     """)
     kb = KnowledgeBase(logic, "")
 
-    state = State([
+    state = State(kb.logic, [
         Proposition.parse("at(P, r3: r)"),
         Proposition.parse("free(r2: r, r3: r)"),
         Proposition.parse("free(r1: r, r2: r)"),

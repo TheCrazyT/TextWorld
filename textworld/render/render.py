@@ -4,6 +4,8 @@
 import os
 import platform
 import io
+import os
+import time
 import json
 import tempfile
 from os.path import join as pjoin
@@ -12,14 +14,33 @@ from typing import Union, Dict, Optional
 import numpy as np
 import networkx as nx
 
+from textworld.core import GameState
 from textworld.logic import Proposition, Action
-from textworld.envs.glulx.git_glulx_ml import GlulxGameState
 from textworld.logic import State
 from textworld.generator import World, Game
-from textworld.utils import maybe_mkdir, get_webdriver, msys_path, is_msys, cygwin_path, is_cygwin
+from textworld.utils import maybe_mkdir, check_modules, msys_path, is_msys, cygwin_path, is_cygwin
 
 from textworld.generator.game import EntityInfo
 from textworld.generator.data import KnowledgeBase
+
+from textworld.render.serve import get_html_template
+
+# Try importing optional libraries.
+missing_modules = []
+try:
+    import webbrowser
+except ImportError:
+    missing_modules.append("webbrowser")
+
+try:
+    from PIL import Image
+except ImportError:
+    missing_modules.append("pillow")
+
+try:
+    from selenium import webdriver
+except ImportError:
+    missing_modules.append("selenium")
 
 
 XSCALE, YSCALE = 6, 3
@@ -89,7 +110,7 @@ class GraphRoom(object):
         self.items.append(item)
 
 
-def load_state_from_game_state(game_state: GlulxGameState, format: str = 'png', limit_player_view: bool = False) -> dict:
+def load_state_from_game_state(game_state: GameState, format: str = 'png', limit_player_view: bool = False) -> dict:
     """
     Generates serialization of game state.
 
@@ -98,11 +119,11 @@ def load_state_from_game_state(game_state: GlulxGameState, format: str = 'png', 
     :param limit_player_view: Whether to limit the player's view. Default: False.
     :return: The graph generated from this World
     """
-    game_infos = game_state.game_infos
-    game_infos["objective"] = game_state.objective
-    last_action = game_state.action
+    game_infos = game_state.game.infos
+    game_infos["objective"] = game_state.objective  # TODO: should not modify game.infos inplace!
+    last_action = game_state.last_action
     # Create a world from the current state's facts.
-    world = World.from_facts(game_state.state.facts)
+    world = World.from_facts(game_state._facts)
     return load_state(world, game_infos, last_action, format, limit_player_view)
 
 
@@ -125,8 +146,12 @@ def temp_viz(nodes, edges, pos, color=[]):
                                    alpha=0.8)
     plt.show()
 
-# create state object from world and game_info
-def load_state(world: World, game_infos: Optional[Dict[str, EntityInfo]] = None, action: Optional[Action] = None, format: str = 'png', limit_player_view: bool = False) -> dict:
+
+def load_state(world: World,
+               game_infos: Optional[Dict[str, EntityInfo]] = None,
+               action: Optional[Action] = None,
+               format: str = 'png',
+               limit_player_view: bool = False) -> dict:
     """
     Generates serialization of game state.
 
@@ -144,7 +169,6 @@ def load_state(world: World, game_infos: Optional[Dict[str, EntityInfo]] = None,
         room = world.player_room
 
     edges = []
-    nodes = sorted([room.name for room in world.rooms])
     pos = {room.name: (0, 0)}
 
     def used_pos():
@@ -215,9 +239,7 @@ def load_state(world: World, game_infos: Optional[Dict[str, EntityInfo]] = None,
             edges.append((room.name, target.name, room.doors.get(exit)))
             # temp_viz(nodes, edges, pos, color=[world.player_room.name])
 
-
     rooms = {}
-    player_room = world.player_room
     if game_infos is None:
         new_game = Game(world)
         game_infos = new_game.infos
@@ -234,6 +256,7 @@ def load_state(world: World, game_infos: Optional[Dict[str, EntityInfo]] = None,
     # Objective
     if "objective" in game_infos:
         result["objective"] = game_infos["objective"]
+        del game_infos["objective"]  # TODO: objective should not be part of game_infos in the first place.
 
     # Objects
     all_items = {}
@@ -297,28 +320,29 @@ def load_state(world: World, game_infos: Optional[Dict[str, EntityInfo]] = None,
         room.base_room = temp
         result["rooms"].append(room.__dict__)
 
-
     def _get_door(door):
         if door is None:
             return None
 
         return all_items[door.name].__dict__
 
-    result["connections"] = [{"src": game_infos[e[0]].name, "dest": game_infos[e[1]].name, 'door': _get_door(e[2])} for e in edges]
+    def _get_name(entity):
+        return game_infos[entity].name
+    result["connections"] = [{"src": _get_name(e[0]), "dest": _get_name(e[1]), "door": _get_door(e[2])}
+                             for e in edges]
     result["inventory"] = [inv.__dict__ for inv in inventory_items]
 
     return result
 
 
-def take_screenshot(url: str, id: str='world'):
+def take_screenshot(url: str, id: str = 'world'):
     """
     Takes a screenshot of DOM element given its id.
     :param url: URL of webpage to open headlessly.
     :param id: ID of DOM element.
     :return: Image object.
     """
-    from PIL import Image
-
+    check_modules(["pillow"], missing_modules)
     driver = get_webdriver()
 
     if is_msys():
@@ -349,8 +373,10 @@ def take_screenshot(url: str, id: str='world'):
     image = image.crop((left, top, right, bottom))
     return image
 
+
 def concat_images(*images):
-    from PIL import Image
+    check_modules(["pillow"], missing_modules)
+
     widths, heights = zip(*(i.size for i in images))
     total_width = sum(widths)
     max_height = max(heights)
@@ -365,7 +391,86 @@ def concat_images(*images):
     return new_im
 
 
-def visualize(world: Union[Game, State, GlulxGameState, World],
+class WebdriverNotFoundError(Exception):
+    pass
+
+
+def which(program):
+    """
+    helper to see if a program is in PATH
+    :param program: name of program
+    :return: path of program or None
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+    
+  
+def get_webdriver(path=None):
+    """
+    Get the driver and options objects.
+    :param path: path to browser binary.
+    :return: driver
+    """
+    from selenium import webdriver
+
+    def chrome_driver(path=None):
+        import urllib3
+        from selenium.webdriver.chrome.options import Options
+        options = Options()
+        options.add_argument('headless')
+        options.add_argument('ignore-certificate-errors')
+        options.add_argument("test-type")
+        options.add_argument("no-sandbox")
+        options.add_argument("disable-gpu")
+        if path is not None:
+            options.binary_location = path
+
+        SELENIUM_RETRIES = 10
+        SELENIUM_DELAY = 3  # seconds
+        for _ in range(SELENIUM_RETRIES):
+            try:
+                return webdriver.Chrome(chrome_options=options)
+            except urllib3.exceptions.ProtocolError:  # https://github.com/SeleniumHQ/selenium/issues/5296
+                time.sleep(SELENIUM_DELAY)
+
+        raise ConnectionResetError('Cannot connect to Chrome, giving up after {SELENIUM_RETRIES} attempts.')
+
+    def firefox_driver(path=None):
+        from selenium.webdriver.firefox.options import Options
+        options = Options()
+        options.add_argument('headless')
+        driver = webdriver.Firefox(firefox_binary=path, options=options)
+        return driver
+
+
+    driver_mapping = {
+        'geckodriver': firefox_driver,
+        'chromedriver': chrome_driver,
+        'chromium-driver': chrome_driver
+    }
+
+    for driver in driver_mapping.keys():
+        found = which(driver)
+        if found is not None:
+            return driver_mapping.get(driver, None)(path)
+
+    raise ModuleNotFoundError("Chrome/Chromium/FireFox Webdriver not found.")
+
+
+def visualize(world: Union[Game, State, GameState, World],
               interactive: bool = False):
     """
     Show the current state of the world.
@@ -373,17 +478,13 @@ def visualize(world: Union[Game, State, GlulxGameState, World],
     :param interactive: Whether or not to visualize the state in the browser.
     :return: Image object of the visualization.
     """
-    try:
-        import webbrowser
-        from textworld.render.serve import get_html_template
-    except ImportError:
-        raise ImportError('Visualization dependencies not installed. Try running `pip install textworld[vis]`')
+    check_modules(["webbrowser"], missing_modules)
 
     if isinstance(world, Game):
         game = world
         state = load_state(game.world, game.infos)
         state["objective"] = game.objective
-    elif isinstance(world, GlulxGameState):
+    elif isinstance(world, GameState):
         state = load_state_from_game_state(game_state=world)
     elif isinstance(world, World):
         state = load_state(world)

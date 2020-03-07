@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 
-from nose.tools import assert_raises
-
 from textworld.logic import Type, TypeHierarchy, Variable
 
 
@@ -81,7 +79,7 @@ def test_multi_closure():
         (a, d), (b, b), (b, c), (c, b), (c, c), (d, a),
                 (a, b), (a, c), (b, a), (c, a),
                             (a, a),
-    }
+    }  # noqa: E131
 
     assert len(pairs) == len(expected)
     assert set(pairs) == expected
@@ -93,7 +91,25 @@ def test_multi_closure():
         (a, d), (b, b), (b, c), (c, b), (c, c), (d, a),
                 (b, d), (c, d), (d, b), (d, c),
                             (d, d),
-    }
+    }  # noqa: E131
 
     assert len(pairs) == len(expected)
     assert set(pairs) == expected
+
+
+def test_determinism():
+    h1 = TypeHierarchy()
+    h1.add(Type("a", []))
+    h1.add(Type("b", ["a"]))
+    h1.add(Type("c", ["a"]))
+
+    h2 = TypeHierarchy()
+    h2.add(Type("c", ["a"]))
+    h2.add(Type("b", ["a"]))
+    h2.add(Type("a", []))
+
+    assert [t.name for t in h1.get("a").subtypes] == [t.name for t in h2.get("a").subtypes]
+
+    md1 = [[t.name for t in pair] for pair in h1.multi_descendants((a, a))]
+    md2 = [[t.name for t in pair] for pair in h2.multi_descendants((a, a))]
+    assert md1 == md2

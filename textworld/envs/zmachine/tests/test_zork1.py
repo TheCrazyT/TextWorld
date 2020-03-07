@@ -32,9 +32,9 @@ def test_losing_game():
         if done:
             break
 
-    print("Done after {} steps. Score {}/{}.".format(game_state.nb_moves, game_state.score, game_state.max_score))
-    assert game_state.has_lost
-    assert not game_state.has_won
+    print("Done after {} steps. Score {}/{}.".format(game_state.moves, game_state.score, game_state.max_score))
+    assert game_state.lost
+    assert not game_state.won
 
 
 @nottest
@@ -60,6 +60,6 @@ def test_winning_game():
         if done:
             break
 
-    print("Done after {} steps. Score {}/{}.".format(game_state.nb_moves, game_state.score, game_state.max_score))
-    assert game_state.has_won
-    assert not game_state.has_lost
+    print("Done after {} steps. Score {}/{}.".format(game_state.moves, game_state.score, game_state.max_score))
+    assert game_state.won
+    assert not game_state.lost

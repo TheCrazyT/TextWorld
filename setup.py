@@ -68,4 +68,7 @@ setup(
     tests_require=[
         'nose>=1.3.7',
     ],
+    extras_require={
+        'vis': open('requirements-vis.txt').readlines(),
+    },
 )

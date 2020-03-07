@@ -4,10 +4,10 @@
 
 import textworld
 
-from textworld import g_rng
-from textworld.utils import make_temp_directory, get_webdriver
+from textworld.utils import make_temp_directory
 from textworld.generator import compile_game
 from textworld.envs.wrappers import HtmlViewer
+from textworld.render import get_webdriver
 
 
 def test_html_viewer():
@@ -35,7 +35,7 @@ def test_html_viewer():
     # options.binary_location = "/bin/chromium"
     driver = get_webdriver()
 
-    driver.get("http://127.0.0.1:8080")
+    driver.get("http://127.0.0.1:{}".format(env.port))
     nodes = driver.find_elements_by_class_name("node")
     assert len(nodes) == num_nodes
     items = driver.find_elements_by_class_name("item")

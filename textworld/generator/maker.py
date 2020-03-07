@@ -2,33 +2,37 @@
 # Licensed under the MIT license.
 
 
-import os
 from os.path import join as pjoin
 from collections import OrderedDict
 
 from typing import List, Iterable, Union, Optional
 
 import networkx as nx
+import numpy as np
+
 import textworld
 
+from textworld.core import EnvInfos
 from textworld.utils import make_temp_directory
 
-from textworld.generator.graph_networks import reverse_direction, direction
+from textworld.generator import Grammar
+from textworld.generator.graph_networks import direction
 from textworld.generator.data import KnowledgeBase
-from textworld.generator import user_query
 from textworld.generator.vtypes import get_new
 from textworld.logic import State, Variable, Proposition, Action
+from textworld.generator.game import GameOptions
 from textworld.generator.game import Game, World, Quest, Event, EntityInfo
 from textworld.generator.graph_networks import DIRECTIONS
 from textworld.render import visualize
 from textworld.envs.wrappers import Recorder
 
 
-def get_failing_constraints(state):
+def get_failing_constraints(state, kb: Optional[KnowledgeBase] = None):
+    kb = kb or KnowledgeBase.default()
     fail = Proposition("fail", [])
 
     failed_constraints = []
-    constraints = state.all_applicable_actions(KnowledgeBase.default().constraints.values())
+    constraints = state.all_applicable_actions(kb.constraints.values())
     for constraint in constraints:
         if state.is_applicable(constraint):
             # Optimistically delay copying the state
@@ -50,6 +54,10 @@ class ExitAlreadyUsedError(ValueError):
 
 
 class PlayerAlreadySetError(ValueError):
+    pass
+
+
+class QuestError(ValueError):
     pass
 
 
@@ -76,7 +84,8 @@ class WorldEntity:
     """
 
     def __init__(self, var: Variable, name: Optional[str] = None,
-                 desc: Optional[str] = None) -> None:
+                 desc: Optional[str] = None,
+                 kb: Optional[KnowledgeBase] = None) -> None:
         """
         Args:
             var: The underlying variable for the entity which is used
@@ -93,6 +102,7 @@ class WorldEntity:
         self.infos.desc = desc
         self.content = []
         self.parent = None
+        self._kb = kb or KnowledgeBase.default()
 
     @property
     def id(self) -> str:
@@ -158,11 +168,11 @@ class WorldEntity:
 
     def add(self, *entities: List["WorldEntity"]) -> None:
         """ Add children to this entity. """
-        if KnowledgeBase.default().types.is_descendant_of(self.type, "r"):
+        if self._kb.types.is_descendant_of(self.type, "r"):
             name = "at"
-        elif KnowledgeBase.default().types.is_descendant_of(self.type, ["c", "I"]):
+        elif self._kb.types.is_descendant_of(self.type, ["c", "I"]):
             name = "in"
-        elif KnowledgeBase.default().types.is_descendant_of(self.type, "s"):
+        elif self._kb.types.is_descendant_of(self.type, "s"):
             name = "on"
         else:
             raise ValueError("Unexpected type {}".format(self.type))
@@ -173,11 +183,11 @@ class WorldEntity:
             entity.parent = self
 
     def remove(self, *entities):
-        if KnowledgeBase.default().types.is_descendant_of(self.type, "r"):
+        if self._kb.types.is_descendant_of(self.type, "r"):
             name = "at"
-        elif KnowledgeBase.default().types.is_descendant_of(self.type, ["c", "I"]):
+        elif self._kb.types.is_descendant_of(self.type, ["c", "I"]):
             name = "in"
-        elif KnowledgeBase.default().types.is_descendant_of(self.type, "s"):
+        elif self._kb.types.is_descendant_of(self.type, "s"):
             name = "on"
         else:
             raise ValueError("Unexpected type {}".format(self.type))
@@ -245,10 +255,10 @@ class WorldRoom(WorldEntity):
         """
         super().__init__(*args, **kwargs)
         self.exits = {}
-        for direction in DIRECTIONS:
-            exit = WorldRoomExit(self, direction)
-            self.exits[direction] = exit
-            setattr(self, direction, exit)
+        for d in DIRECTIONS:
+            exit = WorldRoomExit(self, d)
+            self.exits[d] = exit
+            setattr(self, d, exit)
 
 
 class WorldRoomExit:
@@ -283,7 +293,8 @@ class WorldPath:
 
     def __init__(self, src: WorldRoom, src_exit: WorldRoomExit,
                  dest: WorldRoom, dest_exit: WorldRoomExit,
-                 door: Optional[WorldEntity] = None) -> None:
+                 door: Optional[WorldEntity] = None,
+                 kb: Optional[KnowledgeBase] = None) -> None:
         """
         Args:
             src: The source room.
@@ -297,6 +308,7 @@ class WorldPath:
         self.dest = dest
         self.dest_exit = dest_exit
         self.door = door
+        self._kb = kb or KnowledgeBase.default()
         self.src.exits[self.src_exit].dest = self.dest.exits[self.dest_exit]
         self.dest.exits[self.dest_exit].dest = self.src.exits[self.src_exit]
 
@@ -307,7 +319,7 @@ class WorldPath:
 
     @door.setter
     def door(self, door: WorldEntity) -> None:
-        if door is not None and not KnowledgeBase.default().types.is_descendant_of(door.type, "d"):
+        if door is not None and not self._kb.types.is_descendant_of(door.type, "d"):
             msg = "Expecting a WorldEntity of 'door' type."
             raise TypeError(msg)
 
@@ -348,20 +360,21 @@ class GameMaker:
         paths (List[WorldPath]): The connections between the rooms.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, options: Optional[GameOptions] = None) -> None:
         """
         Creates an empty world, with a player and an empty inventory.
         """
+        self.options = options or GameOptions()
         self._entities = {}
         self._named_entities = {}
         self.quests = []
         self.rooms = []
         self.paths = []
-        self._types_counts = KnowledgeBase.default().types.count(State())
+        self._kb = self.options.kb
+        self._types_counts = self._kb.types.count(State(self._kb.logic))
         self.player = self.new(type='P')
         self.inventory = self.new(type='I')
         self.nowhere = []
-        self.grammar = textworld.generator.make_grammar()
         self._game = None
         self._distractors_facts = []
 
@@ -381,7 +394,7 @@ class GameMaker:
         facts += self.inventory.facts
         facts += self._distractors_facts
 
-        return State(facts)
+        return State(self._kb.logic, facts)
 
     @property
     def facts(self) -> Iterable[Proposition]:
@@ -441,7 +454,7 @@ class GameMaker:
             * Otherwise, a `WorldEntity` is returned.
         """
         var_id = type
-        if not KnowledgeBase.default().types.is_constant(type):
+        if not self._kb.types.is_constant(type):
             var_id = get_new(type, self._types_counts)
 
         var = Variable(var_id, type)
@@ -449,7 +462,7 @@ class GameMaker:
             entity = WorldRoom(var, name, desc)
             self.rooms.append(entity)
         else:
-            entity = WorldEntity(var, name, desc)
+            entity = WorldEntity(var, name, desc, kb=self._kb)
 
         self._entities[var_id] = entity
         if entity.name:
@@ -495,8 +508,8 @@ class GameMaker:
             The matching path path, if it exists.
         """
         for path in self.paths:
-            if ((path.src == room1 and path.dest == room2) or
-                (path.src == room2 and path.dest == room1)):
+            if (((path.src == room1 and path.dest == room2)
+                 or (path.src == room2 and path.dest == room1))):
                 return path
 
         return None
@@ -545,57 +558,66 @@ class GameMaker:
                              exit2.dest.src, exit2.dest.direction)
             raise ExitAlreadyUsedError(msg)
 
-        path = WorldPath(exit1.src, exit1.direction, exit2.src, exit2.direction)
+        path = WorldPath(exit1.src, exit1.direction, exit2.src, exit2.direction, kb=self._kb)
         self.paths.append(path)
         return path
 
-    def add_distractors(self, nb_distractors: int) -> None:
-        """ Adds a number of distractors - random objects.
+    def generate_distractors(self, nb_distractors: int) -> None:
+        """ Generates a number of distractors - random objects.
 
         Args:
-            nb_distractors: The number of distractors to add.
+            nb_distractors: The number of distractors to game will contain.
         """
         self._distractors_facts = []
         world = World.from_facts(self.facts)
         self._distractors_facts = world.populate(nb_distractors)
 
-    def add_random_quest(self, max_length: int) -> Quest:
-        """ Generates a random quest for the game.
+    def generate_random_quests(self, nb_quests=1, length: int = 1, breadth: int = 1) -> List[Quest]:
+        """ Generates random quests for the game.
 
-        Calling this method replaced all previous quests.
+        .. warning:: This method overrides any previous quests the game had.
 
         Args:
-            max_length: The maximum length of the quest to generate.
+            nb_quests: Number of parallel quests, i.e. not sharing a common goal.
+            length: Number of actions that need to be performed to complete the game.
+            breadth: Number of subquests per independent quest. It controls how nonlinear
+                     a quest can be (1: linear).
 
         Returns:
-            The generated quest.
+            The generated quests.
         """
+        options = self.options.copy()
+        options.nb_parallel_quests = nb_quests
+        options.quest_length = length
+        options.quest_breadth = breadth
+        options.chaining.rng = options.rngs['quest']
+
         world = World.from_facts(self.facts)
-        self.quests.append(textworld.generator.make_quest(world, max_length))
+        self.quests = textworld.generator.make_quest(world, options)
 
         # Calling build will generate the description for the quest.
         self.build()
-        return self.quests[-1]
+        return self.quests
 
-    def test(self) -> None:
+    def test(self, walkthrough: bool = False) -> None:
         """ Test the game being built.
 
         This launches a `textworld.play` session.
         """
+
         with make_temp_directory() as tmpdir:
             game_file = self.compile(pjoin(tmpdir, "test_game.ulx"))
-            textworld.play(game_file)
 
-    def record_quest(self, ask_for_state: bool = False) -> Quest:
+            agent = textworld.agents.HumanAgent(autocompletion=True)
+            if walkthrough:
+                agent = textworld.agents.WalkthroughAgent()
+
+            textworld.play(game_file, agent=agent)
+
+    def record_quest(self) -> Quest:
         """ Defines the game's quest by recording the commands.
 
         This launches a `textworld.play` session.
-
-        Args:
-            ask_for_state: If true, the user will be asked to specify
-                           which set of facts of the final state are
-                           should be true in order to consider the quest
-                           as completed.
 
         Returns:
             The resulting quest.
@@ -604,36 +626,25 @@ class GameMaker:
             game_file = self.compile(pjoin(tmpdir, "record_quest.ulx"))
             recorder = Recorder()
             agent = textworld.agents.HumanAgent(autocompletion=True)
-            textworld.play(game_file, agent=agent, wrapper=recorder)
+            textworld.play(game_file, agent=agent, wrappers=[recorder])
 
         # Skip "None" actions.
         actions = [action for action in recorder.actions if action is not None]
 
-        # Ask the user which quests have important state, if this is set
-        # (if not, we assume the last action contains all the relevant facts)
-        winning_facts = None
-        if ask_for_state and recorder.last_game_state is not None:
-            winning_facts = [user_query.query_for_important_facts(actions=recorder.actions,
-                                                                  facts=recorder.last_game_state.state.facts,
-                                                                  varinfos=self._working_game.infos)]
-
-        event = Event(actions=actions, conditions=winning_facts)
+        # Assume the last action contains all the relevant facts about the winning condition.
+        event = Event(actions=actions)
         self.quests.append(Quest(win_events=[event]))
         # Calling build will generate the description for the quest.
         self.build()
         return self.quests[-1]
 
-    def set_quest_from_commands(self, commands: List[str], ask_for_state: bool = False) -> Quest:
+    def set_quest_from_commands(self, commands: List[str]) -> Quest:
         """ Defines the game's quest using predefined text commands.
 
         This launches a `textworld.play` session.
 
         Args:
             commands: Text commands.
-            ask_for_state: If true, the user will be asked to specify
-                           which set of facts of the final state are
-                           should be true in order to consider the quest
-                           as completed.
 
         Returns:
             The resulting quest.
@@ -643,22 +654,18 @@ class GameMaker:
                 game_file = self.compile(pjoin(tmpdir, "record_quest.ulx"))
                 recorder = Recorder()
                 agent = textworld.agents.WalkthroughAgent(commands)
-                textworld.play(game_file, agent=agent, wrapper=recorder, silent=True)
+                textworld.play(game_file, agent=agent, wrappers=[recorder], silent=True)
             except textworld.agents.WalkthroughDone:
                 pass  # Quest is done.
 
         # Skip "None" actions.
         actions = [action for action in recorder.actions if action is not None]
 
-        # Ask the user which quests have important state, if this is set
-        # (if not, we assume the last action contains all the relevant facts)
-        winning_facts = None
-        if ask_for_state and recorder.last_game_state is not None:
-            winning_facts = [user_query.query_for_important_facts(actions=recorder.actions,
-                                                                  facts=recorder.last_game_state.state.facts,
-                                                                  varinfos=self._working_game.infos)]
+        if len(commands) != len(actions):
+            unrecognized_commands = [c for c, a in zip(commands, recorder.actions) if a is None]
+            raise QuestError("Some of the actions were unrecognized: {}".format(unrecognized_commands))
 
-        event = Event(actions=actions, conditions=winning_facts)
+        event = Event(actions=actions)
         self.quests = [Quest(win_events=[event])]
 
         # Calling build will generate the description for the quest.
@@ -691,12 +698,12 @@ class GameMaker:
                 game_file = self.compile(pjoin(tmpdir, "record_event.ulx"))
                 recorder = Recorder()
                 agent = textworld.agents.WalkthroughAgent(commands)
-                textworld.play(game_file, agent=agent, wrapper=recorder, silent=True)
+                textworld.play(game_file, agent=agent, wrappers=[recorder], silent=True)
             except textworld.agents.WalkthroughDone:
                 pass  # Quest is done.
 
         # Skip "None" actions.
-        actions, commands = zip(*[(action, command) for action, command in zip(recorder.actions, commands) if action is not None])
+        actions, commands = zip(*[(a, c) for a, c in zip(recorder.actions, commands) if a is not None])
         event = Event(actions=actions, commands=commands)
         return event
 
@@ -714,6 +721,36 @@ class GameMaker:
         event = self.new_event_using_commands(commands)
         return Quest(win_events=[event], commands=event.commands)
 
+    def set_walkthrough(self, commands: List[str]):
+        with make_temp_directory() as tmpdir:
+            game_file = self.compile(pjoin(tmpdir, "set_walkthrough.ulx"))
+            env = textworld.start(game_file, infos=EnvInfos(last_action=True, intermediate_reward=True))
+            state = env.reset()
+
+            events = {event: event.copy() for quest in self.quests for event in quest.win_events}
+            event_progressions = [ep for qp in state._game_progression.quest_progressions for ep in qp.win_events]
+
+            done = False
+            actions = []
+            for i, cmd in enumerate(commands):
+                if done:
+                    msg = "Game has ended before finishing playing all commands."
+                    raise ValueError(msg)
+
+                events_triggered = [ep.triggered for ep in event_progressions]
+
+                state, score, done = env.step(cmd)
+                actions.append(state._last_action)
+
+                for was_triggered, ep in zip(events_triggered, event_progressions):
+                    if not was_triggered and ep.triggered:
+                        events[ep.event].actions = list(actions)
+                        events[ep.event].commands = commands[:i + 1]
+
+        for k, v in events.items():
+            k.actions = v.actions
+            k.commands = v.commands
+
     def validate(self) -> bool:
         """ Check if the world is valid and can be compiled.
 
@@ -725,7 +762,7 @@ class GameMaker:
             msg = "Player position has not been specified. Use 'M.set_player(room)'."
             raise MissingPlayerError(msg)
 
-        failed_constraints = get_failing_constraints(self.state)
+        failed_constraints = get_failing_constraints(self.state, self._kb)
         if len(failed_constraints) > 0:
             raise FailedConstraintsError(failed_constraints)
 
@@ -746,24 +783,22 @@ class GameMaker:
         if validate:
             self.validate()  # Validate the state of the world.
 
-        world = World.from_facts(self.facts)
+        world = World.from_facts(self.facts, kb=self._kb)
         game = Game(world, quests=self.quests)
 
         # Keep names and descriptions that were manually provided.
+        used_names = set()
         for k, var_infos in game.infos.items():
             if k in self._entities:
                 game.infos[k] = self._entities[k].infos
+                used_names.add(game.infos[k].name)
 
-            # If we can, reuse information generated during last build.
-            if self._game is not None and k in self._game.infos:
-                var_infos = game.infos[k]
-                var_infos.name = self._game.infos[k].name
-                var_infos.adj = self._game.infos[k].adj
-                var_infos.noun = self._game.infos[k].noun
-                var_infos.room_type = self._game.infos[k].room_type
+        # Use text grammar to generate name and description.
+        options = self.options.grammar.copy()
+        options.names_to_exclude += list(used_names)
 
-        # Generate text for recently added objects.
-        game.change_grammar(self.grammar)
+        grammar = Grammar(options, rng=np.random.RandomState(self.options.seeds["grammar"]))
+        game.change_grammar(grammar)
         game.metadata["desc"] = "Generated with textworld.GameMaker."
 
         self._game = game  # Keep track of previous build.
@@ -818,7 +853,6 @@ class GameMaker:
         :param filename: filename for screenshot
         """
         game = self.build(validate=False)
-        game.change_grammar(self.grammar)  # Generate missing object names.
         return visualize(game, interactive=interactive)
 
     def import_graph(self, G: nx.Graph) -> List[WorldRoom]:

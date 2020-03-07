@@ -39,17 +39,17 @@ def evaluate(agent, game, args):
         game_state, score, done = env.step(action)
 
         msg = "{:5d}. Time: {:9.2f}\tScore: {:3d}\tMove: {:5d}\tAction: {:20s}"
-        msg = msg.format(step, time.time() - start_time, game_state.score, game_state.nb_moves, action)
+        msg = msg.format(step, time.time() - start_time, game_state.score, game_state.moves, action)
         log.info(msg)
         log.debug(env.render(mode="text"))
 
         if done:
             highscore = max(score, highscore)
 
-            if game_state.has_won:
+            if game_state.won:
                 if highscore == max_score:
                     break  # No reason to play that game more.
-            elif game_state.has_lost:
+            elif game_state.lost:
                 nb_losts += 1
             else:
                 assert True, "Games should either end with a win or a fail."

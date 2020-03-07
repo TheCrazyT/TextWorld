@@ -17,14 +17,16 @@ from textworld.utils import make_temp_directory, str2bool, chunk
 
 from textworld.generator.game import Game
 from textworld.generator.world import WorldRoom, WorldEntity
-from textworld.logic import Signature, Proposition, Action
+from textworld.logic import Signature, Proposition, Action, Variable
 from textworld.utils import is_cygwin, cygwin_winpath
+
 
 I7_DEFAULT_PATH = resource_filename(Requirement.parse('textworld'), 'textworld/thirdparty/inform7-6M62')
 
 
 class TextworldInform7Warning(UserWarning):
     pass
+
 
 class CouldNotCompileGameError(RuntimeError):
     pass
@@ -71,10 +73,10 @@ class Inform7Game:
                 dest_exit = [k for k, v in dest_room.doors.items() if v == door][0]
                 template = "{src_exit} of {src} and {dest_exit} of {dest} is a door called {door}.\n"
                 source += template.format(src_exit=src_exit,
-                                        src=src_room_id,
-                                        dest_exit=dest_exit,
-                                        dest=dest_room_id,
-                                        door=door.name)
+                                          src=src_room_id,
+                                          dest_exit=dest_exit,
+                                          dest=dest_room_id,
+                                          door=door.name)
             else:
                 sig = Signature("{}_of".format(src_exit), ["r", "r"])
                 _, template = self.kb.inform7_predicates[sig]
@@ -140,7 +142,7 @@ class Inform7Game:
 
                 if obj_infos.synonyms:
                     for synonym in obj_infos.synonyms:
-                       source += 'Understand "{}" as {}.\n'.format(synonym, obj_infos.id)
+                        source += 'Understand "{}" as {}.\n'.format(synonym, obj_infos.id)
 
                 # Since we use objects' id in Inform7 source code, we need to specify how to refer to them.
                 if obj_infos.name:
@@ -198,12 +200,32 @@ class Inform7Game:
         for action in actions:
             command = "None"
             if action is not None:
-                command = self.kb.inform7_commands[action.name]
-                command = command.format(**self._get_name_mapping(action))
+                if getattr(action, "command_template"):
+                    mapping = {var.name: self.entity_infos[var.name].name for var in action.variables}
+                    command = action.format_command(mapping)
+                else:
+                    msg = ("Using slower text commands from action generation."
+                           " Regenerate your games, to get a faster version.")
+                    warnings.warn(msg, TextworldInform7Warning)
+                    command = self.kb.inform7_commands[action.name]
+                    command = command.format(**self._get_name_mapping(action))
 
             commands.append(command)
 
         return commands
+
+    def get_human_readable_fact(self, fact: Proposition) -> Proposition:
+        def _get_name(info):
+            return info.name if info.name else info.id
+
+        arguments = [Variable(_get_name(self.entity_infos[var.name]), var.type) for var in fact.arguments]
+        return Proposition(fact.name, arguments)
+
+    def get_human_readable_action(self, action: Action) -> Action:
+        precondition = list(map(self.get_human_readable_fact, action.preconditions))
+        postconditions = list(map(self.get_human_readable_fact, action.postconditions))
+        name = self.kb.inform7_commands[action.name].split("{")[0].strip()
+        return Action(name, precondition, postconditions)
 
     def detect_action(self, i7_event: str, actions: Iterable[Action]) -> Optional[Action]:
         """ Detect which action corresponds to a Inform7 event.
@@ -250,6 +272,7 @@ class Inform7Game:
 
     def gen_source(self, seed: int = 1234) -> str:
         source = ""
+        source += "Use MAX_STATIC_DATA of 500000.\n"  # To generate game with 300+ locations.
         source += "When play begins, seed the random-number generator with {}.\n\n".format(seed)
         source += self.define_inform7_kinds()
         # Mention that rooms have a special text attribute called 'internal name'.
@@ -345,7 +368,7 @@ class Inform7Game:
             game_winning_test = "score is maximum score"
 
         # Remove square bracket when printing score increases. Square brackets are conflicting with
-        # Inform7's events parser in git_glulx_ml.py.
+        # Inform7's events parser in tw_inform7.py.
         # And add winning conditions for the game.
         source += textwrap.dedent("""\
         This is the simpler notify score changes rule:
@@ -391,7 +414,7 @@ class Inform7Game:
                     no;
                 yes;
 
-            """)
+            """)  # noqa: E501
 
             source += textwrap.dedent("""\
             Definition: a direction (called thataway) is viable if the room thataway from the location is a room and the room-or-door thataway from the location is a room.
@@ -400,7 +423,7 @@ class Inform7Game:
                 if list of viable directions is not empty:
                     say "You can also go [list of viable directions] from here.".
 
-            """)
+            """)  # noqa: E501
 
         # Replace default banner with a greeting message and the quest description.
         source += textwrap.dedent("""\
@@ -427,7 +450,7 @@ class Inform7Game:
             say "[variable letter spacing][line break]";
             say "[objective][line break]".
 
-        """)
+        """)  # noqa: W605
 
         # Simply display *** The End *** when game ends.
         source += textwrap.dedent("""\
@@ -468,7 +491,7 @@ class Inform7Game:
             if the noun is not nothing and the second noun is not nothing and the player's command matches the text printed name of the noun and the player's command matches the text printed name of the second noun:
                 it is very likely.  [Handle action with two arguments.]
 
-        """)
+        """)  # noqa: E501
 
         # Useful for listing room contents with their properties.
         source += textwrap.dedent("""\
@@ -504,7 +527,7 @@ class Inform7Game:
             say "Inventory:[line break]";
             list the contents of the player, with newlines, indented, giving inventory information, including all contents, with extra indentation.
 
-        """)
+        """)  # noqa: E501
 
         # Useful for listing off-stage contents with their properties.
         source += textwrap.dedent("""\
@@ -580,7 +603,7 @@ class Inform7Game:
                 rule succeeds;
             rule fails;
 
-        """)
+        """)  # noqa: E501
 
         objective_parts, objective_text = split_string(objective, "objective")
         objective_parts = textwrap.indent(objective_parts, "        ")
@@ -668,6 +691,8 @@ class Inform7Game:
                 say "</inventory>";
             if extra score command option is true:
                 say "<score>[line break][score][line break]</score>";
+            if extra score command option is true:
+                say "<moves>[line break][turn count][line break]</moves>";
             if print state option is true:
                 try printing the entire state;
 
@@ -796,6 +821,20 @@ class Inform7Game:
 
         """)
 
+        # Special command to get number of "moves" at every step.
+        source += textwrap.dedent("""\
+        The extra moves command option is a truth state that varies.
+        The extra moves command option is usually false.
+
+        Turning on the extra moves command option is an action applying to nothing.
+        Carry out turning on the extra moves command option:
+            Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
+            Now the extra moves command option is true.
+
+        Understand "tw-extra-infos moves" as turning on the extra moves command option.
+
+        """)
+
         # Tracing actions.
         source += textwrap.dedent("""\
             To trace the actions:
@@ -876,6 +915,7 @@ class Inform7Game:
         source += textwrap.dedent("""\
         Reporting max score is an action applying to nothing.
         Carry out reporting max score:
+            Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
             say "[maximum score]".
 
         Understand "tw-print max_score" as reporting max score.
@@ -889,10 +929,12 @@ class Inform7Game:
 
         Printing the id of player is an action applying to nothing.
         Carry out printing the id of player:
+            Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
             print id of player.
 
         Printing the id of EndOfObject is an action applying to nothing.
         Carry out printing the id of EndOfObject:
+            Decrease turn count by 1;  [Internal framework commands shouldn't count as a turn.]
             print id of EndOfObject.
 
         Understand "tw-print player id" as printing the id of player.

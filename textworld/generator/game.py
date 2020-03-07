@@ -6,7 +6,7 @@ import copy
 import json
 import textwrap
 
-from typing import List, Dict, Optional, Mapping, Any, Iterable, Union
+from typing import List, Dict, Optional, Mapping, Any, Iterable, Union, Tuple
 from collections import OrderedDict
 
 from numpy.random import RandomState
@@ -46,6 +46,7 @@ class UnderspecifiedQuestError(NameError):
 
 def gen_commands_from_actions(actions: Iterable[Action], kb: Optional[KnowledgeBase] = None) -> List[str]:
     kb = kb or KnowledgeBase.default()
+
     def _get_name_mapping(action):
         mapping = kb.rules[action.name].match(action)
         return {ph.name: var.name for ph, var in mapping.items()}
@@ -87,9 +88,25 @@ class Event:
                         to get triggered.
             commands: Human readable version of the actions.
         """
-        self.actions = tuple(actions)
-        self.commands = tuple(commands)
+        self.actions = actions
+        self.commands = commands
         self.condition = self.set_conditions(conditions)
+
+    @property
+    def actions(self) -> Iterable[Action]:
+        return self._actions
+
+    @actions.setter
+    def actions(self, actions: Iterable[Action]) -> None:
+        self._actions = tuple(actions)
+
+    @property
+    def commands(self) -> Iterable[str]:
+        return self._commands
+
+    @commands.setter
+    def commands(self, commands: Iterable[str]) -> None:
+        self._commands = tuple(commands)
 
     def is_triggering(self, state: State) -> bool:
         """ Check if this event would be triggered in a given state. """
@@ -121,15 +138,13 @@ class Event:
         return self.condition
 
     def __hash__(self) -> int:
-        return hash((tuple(self.actions),
-                     tuple(self.commands),
-                     self.condition))
+        return hash((self.actions, self.commands, self.condition))
 
     def __eq__(self, other: Any) -> bool:
-        return (isinstance(other, Event) and
-                self.actions == other.actions and
-                self.commands == other.commands and
-                self.condition == other.condition)
+        return (isinstance(other, Event)
+                and self.actions == other.actions
+                and self.commands == other.commands
+                and self.condition == other.condition)
 
     @classmethod
     def deserialize(cls, data: Mapping) -> "Event":
@@ -211,6 +226,30 @@ class Quest:
         if len(self.win_events) == 0 and len(self.fail_events) == 0:
             raise UnderspecifiedQuestError()
 
+    @property
+    def win_events(self) -> Iterable[Event]:
+        return self._win_events
+
+    @win_events.setter
+    def win_events(self, events: Iterable[Event]) -> None:
+        self._win_events = tuple(events)
+
+    @property
+    def fail_events(self) -> Iterable[Event]:
+        return self._fail_events
+
+    @fail_events.setter
+    def fail_events(self, events: Iterable[Event]) -> None:
+        self._fail_events = tuple(events)
+
+    @property
+    def commands(self) -> Iterable[str]:
+        return self._commands
+
+    @commands.setter
+    def commands(self, commands: Iterable[str]) -> None:
+        self._commands = tuple(commands)
+
     def is_winning(self, state: State) -> bool:
         """ Check if this quest is winning in that particular state. """
         return any(event.is_triggering(state) for event in self.win_events)
@@ -220,19 +259,16 @@ class Quest:
         return any(event.is_triggering(state) for event in self.fail_events)
 
     def __hash__(self) -> int:
-        return hash((tuple(self.win_events),
-                     tuple(self.fail_events),
-                     self.reward,
-                     self.desc,
-                     tuple(self.commands)))
+        return hash((self.win_events, self.fail_events, self.reward,
+                     self.desc, self.commands))
 
     def __eq__(self, other: Any) -> bool:
-        return (isinstance(other, Quest) and
-                self.win_events == other.win_events and
-                self.fail_events == other.fail_events and
-                self.reward == other.reward and
-                self.desc == other.desc,
-                self.commands == other.commands)
+        return (isinstance(other, Quest)
+                and self.win_events == other.win_events
+                and self.fail_events == other.fail_events
+                and self.reward == other.reward
+                and self.desc == other.desc
+                and self.commands == other.commands)
 
     @classmethod
     def deserialize(cls, data: Mapping) -> "Quest":
@@ -296,9 +332,9 @@ class EntityInfo:
         self.room_type = None
 
     def __eq__(self, other: Any) -> bool:
-        return (isinstance(other, EntityInfo) and
-                all(getattr(self, slot) == getattr(other, slot)
-                    for slot in self.__slots__))
+        return (isinstance(other, EntityInfo)
+                and all(getattr(self, slot) == getattr(other, slot)
+                        for slot in self.__slots__))
 
     def __hash__(self) -> int:
         return hash(tuple(getattr(self, slot) for slot in self.__slots__))
@@ -339,8 +375,7 @@ class Game:
     _SERIAL_VERSION = 1
 
     def __init__(self, world: World, grammar: Optional[Grammar] = None,
-                 quests: Iterable[Quest] = (),
-                 kb: Optional[KnowledgeBase] = None) -> None:
+                 quests: Iterable[Quest] = ()) -> None:
         """
         Args:
             world: The world to use for the game.
@@ -352,15 +387,7 @@ class Game:
         self.metadata = {}
         self._objective = None
         self._infos = self._build_infos()
-        self.kb = kb or KnowledgeBase.default()
-        self.extras = {}
-
-        # Check if we can derive a global winning policy from the quests.
-        self.main_quest = None
-        policy = GameProgression(self).winning_policy
-        if policy:
-            win_event = Event(actions=policy)
-            self.main_quest = Quest(win_events=[win_event])
+        self.kb = world.kb
 
         self.change_grammar(grammar)
 
@@ -379,37 +406,40 @@ class Game:
 
     def copy(self) -> "Game":
         """ Make a shallow copy of this game. """
-        game = Game(self.world, self.grammar, self.quests, self.kb)
+        game = Game(self.world, None, self.quests)
         game._infos = dict(self.infos)
         game._objective = self._objective
         game.metadata = dict(self.metadata)
-        game.extras = dict(self.extras)
         return game
 
     def change_grammar(self, grammar: Grammar) -> None:
         """ Changes the grammar used and regenerate all text. """
-        from textworld.generator.inform7 import Inform7Game
-        from textworld.generator.text_generation import generate_text_from_grammar
 
         self.grammar = grammar
         _gen_commands = gen_commands_from_actions
         if self.grammar:
+            from textworld.generator.inform7 import Inform7Game
+            from textworld.generator.text_generation import generate_text_from_grammar
             inform7 = Inform7Game(self)
             _gen_commands = inform7.gen_commands_from_actions
             generate_text_from_grammar(self, self.grammar)
 
         for quest in self.quests:
-            # TODO: should have a generic way of generating text commands from actions
-            #       instead of relying on inform7 convention.
             for event in quest.win_events:
                 event.commands = _gen_commands(event.actions)
 
             if quest.win_events:
                 quest.commands = quest.win_events[0].commands
 
-        if self.main_quest:
-            win_event = self.main_quest.win_events[0]
-            self.main_quest.commands = _gen_commands(win_event.actions)
+        # Check if we can derive a global winning policy from the quests.
+        if self.grammar:
+            from textworld.generator.text_generation import describe_event
+            policy = GameProgression(self).winning_policy
+            if policy:
+                mapping = {k: info.name for k, info in self._infos.items()}
+                commands = [a.format_command(mapping) for a in policy]
+                self.metadata["walkthrough"] = commands
+                self.objective = describe_event(Event(policy), self, self.grammar)
 
     def save(self, filename: str) -> None:
         """ Saves the serialized data of this game to a file. """
@@ -433,19 +463,17 @@ class Game:
 
         version = data.get("version", cls._SERIAL_VERSION)
         if version != cls._SERIAL_VERSION:
-            raise ValueError("Cannot deserialize a TextWorld version {} game, expected version {}".format(version, cls._SERIAL_VERSION))
+            msg = "Cannot deserialize a TextWorld version {} game, expected version {}"
+            raise ValueError(msg.format(version, cls._SERIAL_VERSION))
 
-        world = World.deserialize(data["world"])
+        kb = KnowledgeBase.deserialize(data["KB"])
+        world = World.deserialize(data["world"], kb=kb)
         game = cls(world)
-        game.grammar = Grammar(data["grammar"])
+        game.grammar_options = GrammarOptions(data["grammar"])
         game.quests = tuple([Quest.deserialize(d) for d in data["quests"]])
         game._infos = {k: EntityInfo.deserialize(v) for k, v in data["infos"]}
-        game.kb = KnowledgeBase.deserialize(data["KB"])
         game.metadata = data.get("metadata", {})
         game._objective = data.get("objective", None)
-        game.extras = data.get("extras", {})
-        if "main_quest" in data:
-            game.main_quest = Quest.deserialize(data["main_quest"])
 
         return game
 
@@ -464,26 +492,21 @@ class Game:
         data["KB"] = self.kb.serialize()
         data["metadata"] = self.metadata
         data["objective"] = self._objective
-        data["extras"] = self.extras
-        if self.main_quest:
-            data["main_quest"] = self.main_quest.serialize()
 
         return data
 
     def __eq__(self, other: Any) -> bool:
-        return (isinstance(other, Game) and
-                self.world == other.world and
-                self.infos == other.infos and
-                self.quests == other.quests and
-                self.extras == other.extras and
-                self.main_quest == other.main_quest and
-                self._objective == other._objective)
+        return (isinstance(other, Game)
+                and self.world == other.world
+                and self.infos == other.infos
+                and self.quests == other.quests
+                and self.metadata == other.metadata
+                and self._objective == other._objective)
 
     def __hash__(self) -> int:
         state = (self.world,
                  frozenset(self.quests),
                  frozenset(self.infos.items()),
-                 frozenset(self.extras.items()),
                  self._objective)
 
         return hash(state)
@@ -547,8 +570,6 @@ class Game:
 
         # TODO: Find a better way of describing the objective of the game with several quests.
         self._objective = "\nAND\n".join(quest.desc for quest in self.quests if quest.desc)
-        if self.main_quest:
-            self._objective = self.main_quest.desc
 
         return self._objective
 
@@ -630,15 +651,22 @@ class ActionDependencyTree(DependencyTree):
         super().__init__(*args, **kwargs)
         self._kb = kb or KnowledgeBase.default()
 
-    def remove(self, action: Action) -> Optional[Action]:
-        super().remove(action)
+    def remove(self, action: Action) -> Tuple[bool, Optional[Action]]:
+        changed = super().remove(action)
+
+        if self.empty:
+            return changed, None
 
         # The last action might have impacted one of the subquests.
         reverse_action = self._kb.get_reverse_action(action)
         if reverse_action is not None:
-            self.push(reverse_action)
+            changed = self.push(reverse_action)
+        elif self.push(action.inverse()):
+            # The last action did impact one of the subquests
+            # but there's no reverse action to recover from it.
+            changed = True
 
-        return reverse_action
+        return changed, reverse_action
 
     def flatten(self) -> Iterable[Action]:
         """
@@ -656,7 +684,7 @@ class ActionDependencyTree(DependencyTree):
                     break  # Choose an action that avoids cycles.
 
             yield leaf.action
-            last_reverse_action = tree.remove(leaf.action)
+            _, last_reverse_action = tree.remove(leaf.action)
 
     def copy(self) -> "ActionDependencyTree":
         tree = super().copy()
@@ -738,11 +766,13 @@ class EventProgression:
 
         if action is not None and not self._tree.empty:
             # Determine if we moved away from the goal or closer to it.
-            reverse_action = self._tree.remove(action)
-            if reverse_action is None:  # Irreversible action.
+            changed, reverse_action = self._tree.remove(action)
+            if changed and reverse_action is None:  # Irreversible action.
                 self._untriggerable = True  # Can't track quest anymore.
 
-            self._policy = tuple(self._tree.flatten())  # Rebuild policy.
+            if changed and reverse_action is not None:
+                # Rebuild policy.
+                self._policy = tuple(self._tree.flatten())
 
     def compress_policy(self, state: State) -> bool:
         """ Compress the policy given a game state.
@@ -1052,6 +1082,9 @@ class GameOptions:
 
     @property
     def seeds(self):
+        if self._seeds is None:
+            self.seeds = {}  # Generate seeds from g_rng.
+
         return self._seeds
 
     @seeds.setter
@@ -1079,7 +1112,7 @@ class GameOptions:
     @property
     def rngs(self) -> Dict[str, RandomState]:
         rngs = {}
-        for key, seed in self._seeds.items():
+        for key, seed in self.seeds.items():
             rngs[key] = RandomState(seed)
 
         return rngs

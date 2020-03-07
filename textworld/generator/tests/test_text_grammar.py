@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 
+import json
 import unittest
 
 from textworld.generator.text_grammar import Grammar
@@ -15,10 +16,12 @@ class ContainsEveryObjectContainer:
 
 class TestGrammarOptions(unittest.TestCase):
     def test_serialization(self):
-        options = GrammarOptions()
+        options = GrammarOptions(theme="dummy", include_adj=True, names_to_exclude=["name1", "name1", "name2"])
         data = options.serialize()
-        options2 = GrammarOptions.deserialize(data)
+        json_data = json.dumps(data)
+        options2 = GrammarOptions.deserialize(json.loads(json_data))
         assert options == options2
+
 
 class GrammarTest(unittest.TestCase):
     def test_grammar_eq(self):
@@ -27,8 +30,8 @@ class GrammarTest(unittest.TestCase):
         self.assertEqual(grammar, grammar2, "Testing two grammar files are equivalent")
 
     def test_grammar_eq2(self):
-        grammar = Grammar()
-        grammar2 = Grammar(options={'theme': 'something'})
+        grammar = Grammar(options={'theme': 'house'})
+        grammar2 = Grammar(options={'theme': 'basic'})
         self.assertNotEqual(grammar, grammar2, "Testing two different grammar files are not equal")
 
     def test_grammar_get_random_expansion_fail(self):

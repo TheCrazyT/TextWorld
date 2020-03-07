@@ -3,24 +3,33 @@
 
 
 import os
-from typing import Optional, Tuple
+import re
+from typing import Optional, Tuple, List
 
-from textworld.core import Environment, Agent
+from textworld.core import EnvInfos, Environment, Agent
 from textworld.generator.game import Game, GameOptions
 
-from textworld.envs import GlulxEnvironment
-from textworld.envs import JerichoEnvironment
+from textworld.envs import GitGlulxEnv
+from textworld.envs import JerichoEnv
+from textworld.envs import TWInform7
 
 from textworld.agents import HumanAgent
 
 from textworld.generator import make_game, compile_game
 
 
-def start(path: str) -> Environment:
+def start(path: str, infos: Optional[EnvInfos] = None,
+          wrappers: List[callable] = []) -> Environment:
     """ Starts a TextWorld environment to play a game.
 
-    Args:
+    Arguments:
         path: Path to the game file.
+        infos:
+            For customizing the information returned by this environment
+            (see
+            :py:class:`textworld.EnvInfos <textworld.core.EnvInfos>`
+            for the list of available information).
+        wrappers: List of wrappers to apply to the environment.
 
     Returns:
         TextWorld environment running the provided game.
@@ -32,40 +41,42 @@ def start(path: str) -> Environment:
         raise IOError(msg)
 
     # Guess the backend from the extension.
-    backend = "glulx" if path.endswith(".ulx") else "zmachine"
-
-    if backend == "zmachine":
-        env = JerichoEnvironment(path)
-    elif backend == "glulx":
-        env = GlulxEnvironment(path)
+    if path.endswith(".ulx"):
+        env = GitGlulxEnv(infos)
+    elif re.search(r"\.z[1-8]", path):
+        env = JerichoEnv(infos)
     else:
-        msg = "Unsupported backend: {}".format(backend)
+        msg = "Unsupported game format: {}".format(path)
         raise ValueError(msg)
 
+    if TWInform7.compatible(path):
+        wrappers = [TWInform7] + list(wrappers)
+
+    # Apply all wrappers
+    for wrapper in wrappers:
+        env = wrapper(env)
+
+    env.load(path)
     return env
 
 
 def play(game_file: str, agent: Optional[Agent] = None, max_nb_steps: int = 1000,
-         wrapper: Optional[callable] = None, silent: bool = False) -> None:
+         wrappers: List[callable] = [], silent: bool = False) -> None:
     """ Convenience function to play a text-based game.
 
     Args:
         game_file: Path to the game file.
         agent: Agent that will play the game. Default: HumanAgent(autocompletion=True).
         max_nb_steps: Maximum number of steps allowed. Default: 1000.
-        wrapper: Wrapper to apply to the environment.
+        wrappers: List of wrappers to apply to the environment.
         silent: Do not render anything to screen.
 
     Notes:
         Use script :command:`tw-play` for more options.
     """
-    env = start(game_file)
     agent = agent or HumanAgent()
-
+    env = start(game_file, wrappers=wrappers + agent.wrappers)
     agent.reset(env)
-    if wrapper is not None:
-        env = wrapper(env)
-
     game_state = env.reset()
     if not silent:
         env.render(mode="human")
@@ -90,7 +101,7 @@ def play(game_file: str, agent: Optional[Agent] = None, max_nb_steps: int = 1000
 
     if not silent:
         msg = "Done after {} steps. Score {}/{}."
-        msg = msg.format(game_state.nb_moves, game_state.score, game_state.max_score)
+        msg = msg.format(game_state.moves, game_state.score, game_state.max_score)
         print(msg)
 
 

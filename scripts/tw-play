@@ -11,7 +11,6 @@ import textworld
 import textworld.agents
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("game")
@@ -75,7 +74,7 @@ def main():
             break
 
     env.close()
-    print("Done after {} steps. Score {}/{}.".format(game_state.nb_moves, game_state.score, game_state.max_score))
+    print("Done after {} steps. Score {}/{}.".format(game_state.moves, game_state.score, game_state.max_score))
 
 
 if __name__ == "__main__":

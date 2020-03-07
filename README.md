@@ -1,11 +1,12 @@
 # TextWorld
+
 [![Build Status](https://travis-ci.org/Microsoft/TextWorld.svg?branch=master)](https://travis-ci.org/Microsoft/TextWorld) [![PyPI version](https://badge.fury.io/py/textworld.svg)](https://badge.fury.io/py/textworld) [![Documentation Status](https://readthedocs.org/projects/textworld/badge/?version=latest)](https://textworld.readthedocs.io/en/latest/?badge=latest) [![Join the chat at https://gitter.im/Microsoft/TextWorld](https://badges.gitter.im/Microsoft/TextWorld.svg)](https://gitter.im/Microsoft/TextWorld?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A text-based game generator and extensible sandbox learning environment for training and testing reinforcement learning (RL) agents. Also check out [aka.ms/textworld](aka.ms/textworld) for more info about TextWorld and its creators. Have questions or feedback about TextWorld? Send them to textworld@microsoft.com or use the Gitter channel listed above.
+A text-based game generator and extensible sandbox learning environment for training and testing reinforcement learning (RL) agents. Also check out [aka.ms/textworld](https://aka.ms/textworld/) for more info about TextWorld and its creators. Have questions or feedback about TextWorld? Send them to textworld@microsoft.com or use the Gitter channel listed above.
 
 ## Installation
 
-TextWorld requires __Python 3__ and only supports __Linux__ and __macOS__ systems at the moment.
+TextWorld requires __Python 3__ and only supports __Linux__ and __macOS__ systems at the moment. For __Windows__ users, docker can be used as a workaround (see Docker section below).
 
 ### Requirements
 
@@ -30,12 +31,31 @@ Or, after cloning the repo, go inside the root folder of the project (i.e. along
 
     pip install .
 
-#### Extras
+#### Visualization
 
-In order to use the `take_screenshot` or `visualize` functions in `textworld.render`, you'll need to install either the [Chrome](https://sites.google.com/a/chromium.org/chromedriver/) or [Firefox](https://github.com/mozilla/geckodriver) webdriver (depending on which browser you have installed).
+TextWorld comes with some tools to visualize game states. Make sure all dependencies are installed by running
+
+    pip install textworld[vis]
+
+Then, you will need to install either the [Chrome](https://sites.google.com/a/chromium.org/chromedriver/) or [Firefox](https://github.com/mozilla/geckodriver) webdriver (depending on which browser you have currently installed).
 If you have Chrome already installed you can use the following command to install chromedriver
 
     pip install chromedriver_installer
+
+Current visualization tools include: `take_screenshot`, `visualize` and `show_graph` from [`textworld.render`](https://textworld.readthedocs.io/en/latest/textworld.render.html).
+
+### Docker
+
+A docker container with the latest TextWorld release is available on [DockerHub](https://hub.docker.com/).
+
+    docker pull marccote19/textworld
+    docker run -p 8888:8888 -it --rm marccote19/textworld
+
+Then, in your browser, navigate to the Jupyter notebook's link displayed in your terminal. The link should look like this
+
+    http://127.0.0.1:8888/?token=8d7aaa...e95
+
+> **Note:** See [README.md](docker/README.md) in the docker folder for troubleshooting information.
 
 ## Usage
 
@@ -47,7 +67,6 @@ TextWorld provides an easy way of generating simple text-based games via the `tw
 
 where `custom` indicates we want to customize the game using the following options: `--world-size` controls the number of rooms in the world, `--nb-objects` controls the number of objects that can be interacted with (excluding doors) and `--quest-length` controls the minimum number of commands that is required to type in order to win the game. Once done, the game `custom_game.ulx` will be saved in the `tw_games/` folder.
 
-
 ### Playing a game (terminal)
 
 To play a game, one can use the `tw-play` script. For instance, the command to play the game generated in the previous section would be
@@ -55,6 +74,12 @@ To play a game, one can use the `tw-play` script. For instance, the command to p
     tw-play tw_games/custom_game.ulx
 
 > **Note:** Only Z-machine's games (*.z1 through *.z8) and Glulx's games (*.ulx) are supported.
+
+To visualize the game state while playing, use the `--viewer [port]` option.
+
+    tw-play tw_games/custom_game.ulx --viewer
+
+A new browser tab should open and track your progress in the game.
 
 ### Playing a game (Python + [Gym](https://github.com/openai/gym))
 
@@ -90,6 +115,10 @@ print("moves: {}; score: {}".format(moves, score))
 
 For more information about TextWorld, check the [documentation](https://aka.ms/textworld-docs).
 
+## Visual Studio Code
+
+You can install the [textworld-vscode extension ](https://marketplace.visualstudio.com/items?itemName=textworld.textworld-vscode) that enables syntax highlighting for editing `.twl` and `.twg` TextWorld files.
+
 ## Notebooks
 
 Check the [notebooks](notebooks) provided with the framework to see what you can do with it. You will need the [Jupyter Notebook](https://jupyter.org/install) to run them. You can install it with
@@ -109,6 +138,7 @@ If you use TextWorld, please cite the following BibTex:
             Tavian Barnes and
             Emery Fine and
             James Moore and
+            Ruo Yu Tao and
             Matthew Hausknecht and
             Layla El Asri and
             Mahmoud Adada and

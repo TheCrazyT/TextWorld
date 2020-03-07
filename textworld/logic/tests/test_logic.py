@@ -6,7 +6,11 @@ from nose.tools import assert_raises
 
 from tatsu.exceptions import ParseError
 
-from textworld.logic import Action, Rule, Placeholder, Predicate, Proposition, Signature, State, Variable
+from textworld.logic import Action, Rule
+from textworld.logic import Variable, Placeholder
+from textworld.logic import Proposition, Predicate, Signature
+from textworld.logic import State, GameLogic
+from textworld.generator import KnowledgeBase
 
 
 def test_logic_parsing():
@@ -56,7 +60,7 @@ def test_logic_parsing_eos():
 
 
 def test_state():
-    state = State()
+    state = State(KnowledgeBase.default().logic)
 
     P = Variable.parse("P")
     kitchen = Variable.parse("kitchen: r")
@@ -113,7 +117,7 @@ def test_state():
 
 
 def test_all_instantiations():
-    state = State([
+    state = State(KnowledgeBase.default().logic, [
         Proposition.parse("at(P, kitchen: r)"),
         Proposition.parse("in(key: o, kitchen: r)"),
         Proposition.parse("in(egg: o, kitchen: r)"),
@@ -145,7 +149,7 @@ def test_all_instantiations():
 
 
 def test_is_sequence_applicable():
-    state = State([
+    state = State(KnowledgeBase.default().logic, [
         Proposition.parse("at(P, r_1: r)"),
         Proposition.parse("empty(r_2: r)"),
         Proposition.parse("empty(r_3: r)"),
@@ -177,24 +181,31 @@ def test_match():
         Placeholder.parse("d"): Variable.parse("d"),
     }
 
-    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r) & $free(r1: r, r2: r) & $free(r2: r, r1: r) -> at(P, r2: r)")
+    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r)"
+                          "      & $free(r1: r, r2: r) & $free(r2: r, r1: r) -> at(P, r2: r)")
     assert rule.match(action) == mapping
 
     # Order shouldn't matter
 
-    action = Action.parse("go :: $link(r1: r, d, r2: r) & $free(r1: r, r2: r) & $free(r2: r, r1: r) & at(P, r1: r) -> at(P, r2: r)")
+    action = Action.parse("go :: $link(r1: r, d, r2: r) & $free(r1: r, r2: r)"
+                          "      & $free(r2: r, r1: r) & at(P, r1: r) -> at(P, r2: r)")
     assert rule.match(action) == mapping
 
-    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r) & $free(r2: r, r1: r) & $free(r1: r, r2: r) -> at(P, r2: r)")
+    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r)"
+                          "      & $free(r2: r, r1: r) & $free(r1: r, r2: r) -> at(P, r2: r)")
     assert rule.match(action) == mapping
 
     # Predicate matches can't conflict
-    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r) & $free(r2: r, r1: r) & $free(r1: r, r2: r) -> at(P, r3: r)")
-    assert rule.match(action) == None
+    action = Action.parse("go :: at(P, r1: r) & $link(r1: r, d, r2: r)"
+                          "      & $free(r2: r, r1: r) & $free(r1: r, r2: r) -> at(P, r3: r)")
+    assert rule.match(action) is None
 
 
 def test_match_complex():
-    rule = Rule.parse("combine/3 :: $at(P, r) & $correct_location(r) & $in(tool, I) & $in(tool', I) & $in(tool'', I) & in(o, I) & in(o', I) & in(o'', I) & $out(o''') & $used(slot) & used(slot') & used(slot'') -> in(o''', I) & free(slot') & free(slot'')")
+    rule = Rule.parse("combine/3 :: $at(P, r) & $correct_location(r) & $in(tool, I)"
+                      "             & $in(tool', I) & $in(tool'', I) & in(o, I) & in(o', I)"
+                      "             & in(o'', I) & $out(o''') & $used(slot) & used(slot') & used(slot'')"
+                      "          -> in(o''', I) & free(slot') & free(slot'')")
 
     mapping = {
         Placeholder.parse("P"): Variable.parse("P"),
@@ -212,6 +223,100 @@ def test_match_complex():
         Placeholder.parse("slot''"): Variable.parse("slot3: slot"),
     }
 
-    action = Action.parse("combine/3 :: $at(P, r) & $correct_location(r) & $in(tool1: tool, I) & $in(tool2: tool, I) & $in(tool3: tool, I) & in(o1: o, I) & in(o2: o, I) & in(o3: o, I) & $out(o4: o) & $used(slot1: slot) & used(slot2: slot) & used(slot3: slot) -> in(o4: o, I) & free(slot2: slot) & free(slot3: slot)")
-    for _ in range(10000):
+    action = Action.parse("combine/3 :: $at(P, r) & $correct_location(r) & $in(tool1: tool, I)"
+                          "             & $in(tool2: tool, I) & $in(tool3: tool, I) & in(o1: o, I)"
+                          "             & in(o2: o, I) & in(o3: o, I) & $out(o4: o) & $used(slot1: slot)"
+                          "             & used(slot2: slot) & used(slot3: slot)"
+                          "          -> in(o4: o, I) & free(slot2: slot) & free(slot3: slot)")
+    for _ in range(1000):
         assert rule.match(action) == mapping
+
+
+def test_mementos_memoization():
+    # Variable-free proposition.
+    fact = Proposition("name")
+    assert Proposition("name") is fact
+    assert Proposition(name="name") is fact
+    assert Proposition("name", []) is fact
+    assert Proposition("name", arguments=[]) is fact
+    assert Proposition(name="name", arguments=[]) is fact
+    assert Proposition("name2") is not fact
+
+    # General proposition.
+    variables = [Variable("var_1"), Variable("var_2")]
+    fact2 = Proposition("name", variables)
+    assert fact2 is not fact
+    assert Proposition("name", variables) is fact2
+    assert Proposition("name", arguments=variables) is fact2
+    assert Proposition(name="name", arguments=variables) is fact2
+    assert Proposition("name2", variables) is not fact2
+
+    assert Proposition("name", variables[:1]) is not fact2  # Missing a variable.
+    assert Proposition("name", variables[::-1]) is not fact2  # Variable are reversed.
+
+    # Type-free signature.
+    sig = Signature("name")
+    assert Signature("name") is sig
+    assert Signature("name", []) is sig
+    assert Signature("name", types=[]) is sig
+    assert Signature(name="name", types=[]) is sig
+
+    # General signature.
+    types = ["type_A", "type_B"]
+    sig2 = Signature("name", types)
+    assert sig2 is not sig
+    assert Signature("name", types) is sig2
+    assert Signature("name", types=types) is sig2
+    assert Signature(name="name", types=types) is sig2
+
+    assert Signature("name", types[:1]) is not sig2  # Missing a variable.
+    assert Signature("name", types[::-1]) is not sig2  # Variable are reversed.
+
+
+def test_reverse_rule_and_action():
+    logic = GameLogic.parse("""
+        type container {
+            predicates {
+                open(container);
+                closed(container);
+            }
+
+            rules {
+                open  :: closed(container) -> open(container);
+                close :: open(container) -> closed(container);
+            }
+
+            reverse_rules {
+                open :: close;
+            }
+
+            inform7 {
+                commands {
+                    open :: "open {container}" :: "opening the {container}";
+                    close :: "close {container}" :: "closing the {container}";
+                }
+            }
+
+        }
+    """)
+
+    open_rule = logic.rules["open"]
+    close_rule = logic.rules["close"]
+    assert open_rule.reverse_rule == close_rule
+    assert close_rule.reverse_rule == open_rule
+
+    open_action = open_rule.instantiate({
+        Placeholder("container", "container"): Variable("c_0", "container")
+    })
+
+    mapping = {"c_0": "chest"}
+    assert open_action.format_command(mapping) == "open chest"
+    r_open_action = open_action.inverse()
+    assert r_open_action.name == "close"
+    assert r_open_action.format_command(mapping) == "close chest"
+
+    # Action's command template should persist through serialization.
+    open_action2 = Action.deserialize(open_action.serialize())
+    open_action2.format_command(mapping) == "open chest"
+
+    assert open_action2.inverse() == r_open_action
