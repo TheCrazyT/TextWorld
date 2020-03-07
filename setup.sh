@@ -36,25 +36,26 @@ cd textworld/thirdparty/
 echo "platform: ${platform}"
 if [ "${platform}" == "Linux" ]
 then
-# Install command line Inform 7
-if [ ! -e I7_6M62_Linux_all.tar.gz ]; then
-    echo "Downloading Inform7 CLI"
-    curl -LO http://inform7.com/apps/6M62/I7_6M62_Linux_all.tar.gz
-    if [ "${machine}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
-        echo "Downloading Inform7 for Mac"
-        curl -LO http://inform7.com/apps/6M62/I7-6M62-OSX.dmg
-    fi
-	if [ ! -d inform7-6M62 ]; then
-		tar xf I7_6M62_Linux_all.tar.gz
+	# Install command line Inform 7
+	if [ ! -e I7_6M62_Linux_all.tar.gz ]; then
+		echo "Downloading Inform7 CLI"
+		curl -LO http://inform7.com/apps/6M62/I7_6M62_Linux_all.tar.gz
+		if [ "${machine}" == 'Mac' ] && [ ! -e I7-6M62-OSX.dmg ]; then
+			echo "Downloading Inform7 for Mac"
+			curl -LO http://inform7.com/apps/6M62/I7-6M62-OSX.dmg
+		fi
+		if [ ! -d inform7-6M62 ]; then
+			tar xf I7_6M62_Linux_all.tar.gz
+		fi
+		(
+			echo "Installing Inform7 CLI"
+			cd inform7-6M62/
+			./install-inform7.sh --prefix $PWD
+			cd ..
+			rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
+			cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
+		)
 	fi
-	(
-		echo "Installing Inform7 CLI"
-		cd inform7-6M62/
-		./install-inform7.sh --prefix $PWD
-		cd ..
-		rm -f inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-		cp inform7/share/inform7/Internal/I6T/Actions.i6t inform7-6M62/share/inform7/Internal/I6T/Actions.i6t
-	)
 fi
 if [ "${platform}" == "Win" ]; then
 	if [ "${machine}" == "MinGW" ]; then
